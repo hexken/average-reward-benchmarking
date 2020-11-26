@@ -3,6 +3,177 @@ import numpy as np
 from utils.helpers import get_weights_from_npy
 
 
+class FAControlAgent(BaseAgent):
+    """
+    A generic class that is re-used in the implementation of all sorts of control algorithms with LFA.
+    Only agent_step needs to be implemented in the child classes.
+    """
+
+    def __init__(self, config):
+        super().__init__()
+        self.num_actions = config['num_actions']
+        self.num_states = config['num_states']          # this could also be the size of the observation vector
+
+        self.alpha_w = None
+        self.alpha_r = None
+        self.value_init = None
+        self.avg_reward_init = None
+        self.epsilon = None
+        self.choose_action = None                       # the policy (e-greedy/greedy/random)
+        self.max_action = None                          # the greedy action for Q-learning-esque update
+
+        self.q_params = None
+        self.avg_reward = None
+        self.avg_value = None
+
+        self.rand_generator = None
+
+        self.actions = None
+        self.past_action = None
+        self.past_state = None
+        self.timestep = None
+
+    def choose_action_egreedy(self, q_s):
+        """returns an action using an epsilon-greedy policy w.r.t. the current action-value function.
+        Args:
+            observation (List)
+        Returns:
+            (Integer) The action taken w.r.t. the aforementioned epsilon-greedy policy
+        """
+
+        if self.rand_generator.rand() < self.epsilon:
+            action = self.rand_generator.choice(self.actions)
+        else:
+            action = self.rand_generator.choice(np.where(q_s == np.amax(q_s)))
+
+        return action
+
+    def choose_action_greedy(self, q_s):
+        """returns an action using a greedy policy w.r.t. the current action-value function.
+        Args:
+            observation (List)
+        Returns:
+            (Integer) The action taken w.r.t. the aforementioned greedy policy
+        """
+        action = self.rand_generator.choice(np.argwhere(q_s == np.amax(q_s)))
+
+        return action
+
+    def choose_action_random(self):
+        """returns a random action indifferent to the current action-value function.
+        Args:
+        Returns:
+            (Integer) The action taken
+        """
+        return self.rand_generator.choice(self.actions)
+
+    def pick_policy(self, policy_type):
+        """returns the method that'll pick actions based on the argument"""
+        if policy_type == 'random':
+            return self.choose_action_random
+        elif policy_type == 'greedy':
+            return self.choose_action_greedy
+        elif policy_type == 'egreedy':
+            return self.choose_action_egreedy
+
+    def set_q_params(self, q_params):
+        """sets the agent's weights to the given weight vector.
+        Usually used for evaluating the learned policy"""
+        self.q_params = q_params
+
+    def get_value(self, representation):
+        """returns the action value linear in the representation and the weights
+        Args:
+            representation : ndarray
+                the 'x' part of (w^T x)
+        Returns:
+            w^T x : float
+        """
+        return np.dot(representation, self.weights)
+
+    def max_action_value(self, observation):
+        """returns the action corresponding to the maximum action value for the given observation"""
+        q_s = np.array([self.get_value(self.get_representation(observation, a)) for a in self.actions])
+        self.max_action = self.rand_generator.choice(np.argwhere(q_s == np.amax(q_s)).flatten())
+
+        return q_s[self.max_action]
+
+    def agent_init(self, agent_info):
+        """Setup for the agent called when the experiment first starts."""
+
+        # assert "num_actions" in agent_info
+        # self.num_actions = agent_info.get("num_actions", 4)
+        # assert "num_states" in agent_info
+        # self.num_states = agent_info["num_states"]
+        self.alpha_w = agent_info.get("alpha_w", 0.1)
+        self.eta = agent_info.get("eta", 1)
+        # self.alpha_r = agent_info.get("alpha_r", self.alpha_w)
+        self.alpha_r = self.eta * self.alpha_w
+        self.value_init = agent_info.get("value_init", 0)
+        self.avg_reward_init = agent_info.get("avg_reward_init", 0)
+        self.epsilon = agent_info.get("epsilon", 0.1)
+        self.choose_action = self.pick_policy(agent_info.get("policy_type", "egreedy"))
+
+        self.weights = np.zeros(self.num_states * self.num_actions) + self.value_init
+        self.avg_reward = 0.0 + self.avg_reward_init
+        ### if the weights are supplied, they should be an ndarray in an npy file
+        ### as a dictionary element with key 'weights'
+        if 'weights_file' in agent_info:
+            weights = get_weights_from_npy(agent_info['weights_file'])
+            assert weights.size == self.num_states * self.num_actions
+            self.weights = weights
+            # if avg_reward != None
+            #     assert np.ndim(avg_reward) == 0
+            # self.avg_reward = avg_reward
+        # self.bias = np.zeros(self.num_actions) + self.value_init
+        # self.delta = 0
+
+        self.rand_generator = np.random.RandomState(agent_info.get('random_seed', 22))
+
+        self.avg_value = 0.0
+        self.actions = list(range(self.num_actions))
+        self.past_action = None
+        self.past_state = None
+        self.timestep = 0  # for debugging
+
+    def agent_start(self, observation):
+        """The first method called when the experiment starts,
+        called after the environment starts.
+        Args:
+            observation (Numpy array): the state observation from the
+                environment's env_start function.
+        Returns:
+            (integer) the first action the agent takes.
+        """
+
+        self.past_action = self.choose_action(observation)
+        self.past_state = self.get_representation(observation, self.past_action)
+        self.timestep += 1
+
+        return self.past_action
+
+    def agent_step(self, reward, observation):
+        """A step taken by the agent.
+        Performs the Direct RL step, chooses the next action.
+        Args:
+            reward (float): the reward received for taking the last action taken
+            observation : ndarray
+                the state observation from the
+                environment's step based on where the agent ended up after the
+                last step
+        Returns:
+            (integer) The action the agent takes given this observation.
+        """
+        raise NotImplementedError
+
+    def agent_end(self, reward):
+        """Run when the agent terminates.
+        A direct-RL update with the final transition. Not applicable for continuing tasks
+        Args:
+            reward (float): the reward the agent received for entering the
+                terminal state.
+        """
+        pass
 class LFAControlAgent(BaseAgent):
     """
     A generic class that is re-used in the implementation of all sorts of control algorithms with LFA.

@@ -10,6 +10,9 @@ def validate_output_folder(path):
         os.makedirs(path)
     return path
 
+def argmax(rand_gen, x):
+    """ returns i uniformly at random from { i | x[i] == max(x) } """
+    return rand_gen.choice(np.where(x == np.amax(x)))
 
 def all_files_with_prefix_and_suffix(location, prefix, suffix):
     """returns a list of all files in the 'location' starting with the given prefix"""

@@ -1,7 +1,8 @@
-from agents.base_agent import BaseAgent
 import numpy as np
-from utils.helpers import get_weights_from_npy, argmax
+from utils.helpers import argmax
 from abc import ABCMeta, abstractmethod
+
+from agents.base_agent import BaseAgent
 
 class FAControlAgent(BaseAgent):
     """
@@ -16,9 +17,6 @@ class FAControlAgent(BaseAgent):
         super().__init__()
         self.num_actions = config['num_actions']
         self.num_states = config['num_states']  # this could also be the size of the observation vector
-
-        self.learning_params = None
-        self.q_params = None
 
         self.rand_generator = None
         self.choose_action = None  # the policy (e-greedy/greedy/random)
@@ -75,18 +73,15 @@ class FAControlAgent(BaseAgent):
             self.epsilon = agent_info.get('epsilon', 0.1)
             return self.choose_action_egreedy
 
-    def get_q_s(self, representation):
+    def get_q_s(self, observation):
         """returns an array of action values at the state representation
         Args:
-            representation : ndarray
+            observation : ndarray
         Returns:
             q(s) : ndarray q_s
         """
         raise NotImplementedError
 
-    def max_action_value(self):
-        """returns the action corresponding to the maximum action value for the given observation"""
-        return self.q_s[argmax(self.rand_generator, self.q_s)]
 
     def agent_init(self, agent_info):
         """Setup for the agent called when the experiment first starts."""
@@ -129,6 +124,7 @@ class FAControlAgent(BaseAgent):
         """
         raise NotImplementedError
 
+
     def agent_end(self, reward):
         """Run when the agent terminates.
         A direct-RL update with the final transition. Not applicable for continuing tasks
@@ -138,3 +134,78 @@ class FAControlAgent(BaseAgent):
         """
         pass
 
+
+class MLPControlAgent(FAControlAgent):
+    """
+    Implements the version of newly-proposed Differential Q-learning algorithm
+    in which centering does not affect the learning process.
+    """
+
+    __metaclass__ = ABCMeta
+
+    def __init__(self, config):
+        super().__init__(config)
+
+    def get_qs(self, observation):
+        """returns action value vector q:S->R^{|A|}
+        Args:
+            observation: ndarray
+        Returns:
+        """
+        return self.model.predict(observation)
+
+    def max_action_value_f(self, observation):
+        """
+        returns the higher-order action value corresponding to the
+        maximum lower-order action value for the given observation.
+        Note: this is not max_a q_f(s,a)
+        """
+        q_f_sa = self.get_value_f(self.get_representation(observation, self.max_action))
+        return q_f_sa
+
+    def agent_init(self, agent_info):
+        super().agent_init(agent_info)
+
+        self.avg_value = 0.0
+        self.alpha_w_f = agent_info.get("alpha_w_f", 0.1)
+        self.eta_f = agent_info.get("eta_f", 1)
+        self.alpha_r_f = self.eta_f * self.alpha_w_f
+
+        self.model = Sequential(
+            [
+                Dense(4, activation="relu", name="input"),
+                Dense(16, activation="relu", name="hidden1"),
+                Dense(2, name="output"),
+            ]
+        )
+        self.model.compile(optimizer='sgd', loss='mse')
+
+    def agent_step(self, reward, observation):
+        """A step taken by the agent.
+        Performs the Direct RL step, chooses the next action.
+        Args:
+            reward (float): the reward received for taking the last action taken
+            observation : ndarray
+                the state observation from the environment's step based on where
+                the agent ended up after the last step
+        Returns:
+            (integer) The action the agent takes given this observation.
+
+        Note: the step size parameters are separate for the value function and the reward rate in the code,
+                but will be assigned the same value in the agent parameters agent_info
+        """
+        delta = reward - self.avg_reward + self.max_action_value(observation) - self.get_value(self.past_state)
+        self.weights += self.alpha_w * delta * self.past_state
+        # self.avg_reward += self.beta * (reward - self.avg_reward)
+        self.avg_reward += self.alpha_r * delta
+        delta_f = self.get_value(self.past_state) - self.avg_value + \
+                  self.max_action_value_f(observation) - self.get_value_f(self.past_state)
+        self.weights_f += self.alpha_w_f * delta_f * self.past_state
+        self.avg_value += self.alpha_r_f * delta_f
+
+        action = self.choose_action(observation)
+        state = self.get_representation(observation, action)
+        self.past_state = state
+        self.past_action = action
+
+        return self.past_action

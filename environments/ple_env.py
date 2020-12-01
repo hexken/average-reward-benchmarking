@@ -9,12 +9,11 @@ from ple.games.puckworld import PuckWorld
 
 class PLEEnv(BaseEnvironment):
     def __init__(self):
+        super().__init__()
         reward = None
         observation = None
         termination = None
         self.reward_obs_term = (reward, observation, termination)
-        self.num_actions = None
-        self.state_size = None
 
     def env_init(self, env_info={}):
         self.p = PLE(self.game, fps=30, display_screen=False, force_fps=False)
@@ -22,7 +21,7 @@ class PLEEnv(BaseEnvironment):
         self.reward_obs_term = [0.0, None, False]
         self.actions = self.p.getActionSet()
         self.num_actions = len(self.actions)
-        self.state_size = self.start_state.shape
+        self.num_states = self.start_state.shape
 
     def env_start(self):
         self.current_state = self.start_state
@@ -43,10 +42,11 @@ class PLEEnv(BaseEnvironment):
 
         return self.reward_obs_term
 
+
 class CatcherEnv(PLEEnv):
     def __init__(self):
         super().__init__()
-        self.game = Catcher()
+        self.game = Catcher(init_lives=np.inf)
 
 
 class PuckWorldEnv(PLEEnv):

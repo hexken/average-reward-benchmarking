@@ -1,8 +1,12 @@
 import numpy as np
-from utils.helpers import argmax
 from abc import ABCMeta, abstractmethod
 
 from agents.base_agent import BaseAgent
+
+# tensorflow imports
+import tensorflow as tf
+from tensorflow.keras import layers
+
 
 class FAControlAgent(BaseAgent):
     """
@@ -30,7 +34,7 @@ class FAControlAgent(BaseAgent):
         self.past_state = None
         self.timestep = None
 
-    def choose_action_egreedy(self):
+    def choose_action_egreedy(self, observation):
         """returns an action using an epsilon-greedy policy w.r.t. the current action-value function.
         Args:
             observation (List)
@@ -38,23 +42,27 @@ class FAControlAgent(BaseAgent):
             (Integer) The action taken w.r.t. the aforementioned epsilon-greedy policy
         """
 
-        if self.rand_generator.rand() < self.epsilon:
+        if self.rand_generator.rand() < self.epsilon or self.frame_count < self.epsilon_random_frames:
             action = self.rand_generator.choice(self.num_actions)
         else:
-            action = argmax(self.rand_generator)
+            q_s = self.get_one_value(observation)
+            action = self.rand_generator.choice(np.argwhere(q_s == np.amax(q_s)).flatten())
 
         return action
 
-    def choose_action_greedy(self):
+    def choose_action_greedy(self, observation):
         """returns an action using a greedy policy w.r.t. the current action-value function.
         Args:
             observation (List)
         Returns:
             (Integer) The action taken w.r.t. the aforementioned greedy policy
         """
-        return argmax(self.rand_generator, self.q_s)
+        q_s = self.get_one_value(observation)
+        action = self.rand_generator.choice(np.argwhere(q_s == np.amax(q_s)).flatten())
+        
+        return action
 
-    def choose_action_random(self):
+    def choose_action_random(self, observation):
         """returns a random action indifferent to the current action-value function.
         Args:
         Returns:
@@ -62,25 +70,25 @@ class FAControlAgent(BaseAgent):
         """
         return self.rand_generator.choice(self.num_actions)
 
-    def pick_policy(self, agent_info):
+    def pick_policy(self, policy_type):
         """returns the method that'll pick num_actions based on the argument"""
-        policy_type = agent_info.get('policy_type', 'egreedy')
         if policy_type == 'random':
             return self.choose_action_random
         elif policy_type == 'greedy':
             return self.choose_action_greedy
         elif policy_type == 'egreedy':
-            self.epsilon = agent_info.get('epsilon', 0.1)
             return self.choose_action_egreedy
 
-    def get_q_s(self, observation):
+    def get_one_value(self, observation):
         """returns an array of action values at the state representation
         Args:
             observation : ndarray
         Returns:
             q(s) : ndarray q_s
         """
-        raise NotImplementedError
+        model_obs = tf.convert_to_tensor(observation)
+        model_obs = tf.expand_dims(model_obs, 0)
+        return self.model(model_obs, training=False)[0].numpy()
 
 
     def agent_init(self, agent_info):
@@ -103,7 +111,6 @@ class FAControlAgent(BaseAgent):
             (integer) the first action the agent takes.
         """
 
-        self.q_s = self.get_q_s(observation)
         self.past_action = self.choose_action(observation)
         self.past_state = observation
         self.timestep += 1
@@ -146,66 +153,109 @@ class MLPControlAgent(FAControlAgent):
     def __init__(self, config):
         super().__init__(config)
 
-    def get_qs(self, observation):
+    def get_batch_value(self, observation):
         """returns action value vector q:S->R^{|A|}
         Args:
             observation: ndarray
         Returns:
         """
-        return self.model.predict(observation)
+        return self.model(observation)
+    
+    def get_batch_target_value(self, observation):
+        """returns action value vector q:S->R^{|A|}
+        Args:
+            observation: ndarray
+        Returns:
+        """
+        return self.model_target.predict(observation)
 
-    def max_action_value_f(self, observation):
+    def max_action_value(self, observation):
         """
         returns the higher-order action value corresponding to the
         maximum lower-order action value for the given observation.
         Note: this is not max_a q_f(s,a)
         """
-        q_f_sa = self.get_value_f(self.get_representation(observation, self.max_action))
-        return q_f_sa
+        q_s = self.get_batch_target_value(observation)
+        return tf.reduce_max(q_s, axis=1)
 
     def agent_init(self, agent_info):
+        """Setup for the agent called when the experiment first starts."""
+
         super().agent_init(agent_info)
 
-        self.avg_value = 0.0
-        self.alpha_w_f = agent_info.get("alpha_w_f", 0.1)
-        self.eta_f = agent_info.get("eta_f", 1)
-        self.alpha_r_f = self.eta_f * self.alpha_w_f
+        # assert "num_actions" in agent_info
+        # self.num_actions = agent_info.get("num_actions", 4)
+        # assert "num_states" in agent_info
+        # self.num_states = agent_info["num_states"]
+        self.alpha_w = agent_info.get("alpha_w", 0.1)
+        self.eta = agent_info.get("eta", 1)
+        # self.alpha_r = agent_info.get("alpha_r", self.alpha_w)
+        self.alpha_r = self.eta * self.alpha_w
+        self.value_init = agent_info.get("value_init", 0)
+        self.avg_reward_init = agent_info.get("avg_reward_init", 0)
+        self.epsilon = agent_info.get("epsilon", 0.1)
+        self.choose_action = self.pick_policy(agent_info.get("policy_type", "egreedy"))
 
-        self.model = Sequential(
-            [
-                Dense(4, activation="relu", name="input"),
-                Dense(16, activation="relu", name="hidden1"),
-                Dense(2, name="output"),
-            ]
-        )
-        self.model.compile(optimizer='sgd', loss='mse')
+        self.avg_reward = 0.0 + self.avg_reward_init
+        
+        # new for MLP
+        self.batch_size = 128 # 128
+        self.hidden_layers = [32,32] # [32,32]
+        
+        self.model = self.create_model()
+        self.model_target = self.create_model()
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.alpha_w,
+                                                  clipnorm=1.0)
+        self.loss_function = tf.keras.losses.Huber()
+        self.update_after_actions = 2 # 8
+        self.update_target_network = 1600 # 1600
+        #self.update_avg_reward = 64
+        
+        # frame counts
+        self.frame_count = 0
+        self.epsilon_random_frames = 0
+        
+        # epsilon decay
+        self.epsilon = 1.0 # 1.0
+        self.epsilon_min = 0.1 # 0.1
+        self.epsilon_max = 1.0 # 1.0
+        self.epsilon_interval = self.epsilon_max - self.epsilon_min
+        
+        # experience replay
+        self.init_experience_replay()
+        
+    
+    def create_model(self):
+        inputs = layers.Input(shape=(self.num_states), dtype=tf.float64)
+        
+        x = inputs
+        for layer_size in self.hidden_layers:
+            x = layers.Dense(layer_size, activation='relu',
+                             kernel_initializer='glorot_uniform',
+                             dtype=tf.float64)(x)
 
-    def agent_step(self, reward, observation):
-        """A step taken by the agent.
-        Performs the Direct RL step, chooses the next action.
-        Args:
-            reward (float): the reward received for taking the last action taken
-            observation : ndarray
-                the state observation from the environment's step based on where
-                the agent ended up after the last step
-        Returns:
-            (integer) The action the agent takes given this observation.
+        outputs = layers.Dense(self.num_actions, activation='linear',
+                               kernel_initializer='glorot_uniform',
+                               dtype=tf.float64)(x)
+        
+        return tf.keras.Model(inputs=inputs, outputs=outputs)
 
-        Note: the step size parameters are separate for the value function and the reward rate in the code,
-                but will be assigned the same value in the agent parameters agent_info
-        """
-        delta = reward - self.avg_reward + self.max_action_value(observation) - self.get_value(self.past_state)
-        self.weights += self.alpha_w * delta * self.past_state
-        # self.avg_reward += self.beta * (reward - self.avg_reward)
-        self.avg_reward += self.alpha_r * delta
-        delta_f = self.get_value(self.past_state) - self.avg_value + \
-                  self.max_action_value_f(observation) - self.get_value_f(self.past_state)
-        self.weights_f += self.alpha_w_f * delta_f * self.past_state
-        self.avg_value += self.alpha_r_f * delta_f
-
-        action = self.choose_action(observation)
-        state = self.get_representation(observation, action)
-        self.past_state = state
-        self.past_action = action
-
-        return self.past_action
+    def init_experience_replay(self):
+      
+        # experience replay buffers
+        self.action_history = []
+        self.state_history = []
+        self.state_next_history = []
+        self.rewards_history = []
+        self.update_rho_history = []
+        
+        # random action frames
+        self.epsilon_random_frames = 4000 # 4000
+        # greedy action frames (for epsilon decay)
+        self.epsilon_greedy_frames = 40000 # 40000
+        # maximum replay length
+        self.max_memory_length = 80000 # 80000
+    
+    def decay_epsilon(self):
+        self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
+        self.epsilon = max(self.epsilon, self.epsilon_min)

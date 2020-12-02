@@ -16,16 +16,20 @@ class RLGlue:
 
     def __init__(self, env_class, agent_class):
         self.environment = env_class()
-        self.agent = agent_class({'num_states': self.environment.num_states,
-                                  'num_actions': self.environment.num_actions})
         self.total_reward = None
         self.last_action = None
         self.num_steps = None
         self.num_episodes = None
+        self.agent_class = agent_class
 
     def rl_init(self, agent_init_info={}, env_init_info={}):
         """Initial method called when RLGlue experiment is created"""
         self.environment.env_init(env_init_info)
+        
+        # moved down for PLE
+        self.agent = self.agent_class({'num_states': self.environment.num_states,
+                                       'num_actions': self.environment.num_actions})
+        
         self.agent.agent_init(agent_init_info)
 
         self.total_reward = 0.0

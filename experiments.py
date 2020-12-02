@@ -130,7 +130,7 @@ def run_exp_learning_control_no_eval(env, agent, config):
         rl_glue = RLGlue(env, agent)
         rl_glue.rl_init(agent_info, env_info)
         rl_glue.rl_start()
-        assert num_weights == rl_glue.agent.weights.size, "exp_params:num_weights should match number of agent weights"
+        #assert num_weights == rl_glue.agent.weights.size, "exp_params:num_weights should match number of agent weights"
 
         eval_idx = 0
 

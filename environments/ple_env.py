@@ -16,7 +16,7 @@ class PLEEnv(BaseEnvironment):
         self.reward_obs_term = (reward, observation, termination)
 
     def env_init(self, env_info={}):
-        self.p = PLE(self.game, fps=30, display_screen=False, force_fps=False)
+        self.p = PLE(self.game, fps=30, display_screen=True, force_fps=False)
         self.start_state = np.array(list(self.p.getGameState().values()))
         self.reward_obs_term = [0.0, None, False]
         self.actions = self.p.getActionSet()

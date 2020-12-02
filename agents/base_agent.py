@@ -17,6 +17,7 @@ class BaseAgent:
     __metaclass__ = ABCMeta
 
     def __init__(self):
+        print('base')
         self.num_actions = None
         self.num_states = None
 

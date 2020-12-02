@@ -11,8 +11,8 @@
     },
     "env_parameters":
     {
-      "width": 64,
-      "height": 64,
+      "width": 32,
+      "height": 32,
       "init_lives": 100000000
     },
 
@@ -28,14 +28,14 @@
             "alpha_steps_per_anneal": 1000,
             "eta_anneal_factor": 0.9995,
             "eta_steps_per_anneal": 1000,
-            "hidden_layers": [5, 5],
-            "activation": "relu",
-            "optimizer": "adam",
+            "hidden_layer_sizes": [5, 5],
+            "er_buffer_capacity": 1000,
+            "steps_per_target_network_update": 10
         },
         "sweep_parameters":
         {
-            "alpha": [0.0015625, 0.00625, 0.025, 0.1, 0.4],
-            "eta": [0.125, 0.25, 0.5, 1, 2]
+            "alpha": [0.025],
+            "eta": [0.5]
         }
     }
 }

@@ -66,9 +66,10 @@ class BaseAgent:
             rep : ndarray
                 the representation vector
         """
-        if action == -1:
-            return observation
-        else:
-            rep = np.zeros(self.num_states * self.num_actions)
-            rep[self.num_states * action: self.num_states * (action + 1)] = observation
-            return rep
+        # if action == -1:
+        #     return observation
+        # else:
+        #     rep = np.zeros(self.num_states * self.num_actions)
+        #     rep[self.num_states * action: self.num_states * (action + 1)] = observation
+        #     return rep
+        return observation

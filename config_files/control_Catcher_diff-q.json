@@ -1,5 +1,5 @@
 {
-    "exp_name": "Catcher_DiffQ_eps_0.1_1-5",
+    "exp_name": "Catcher_DiffQ_eps_0.1_test",
     "env": "Catcher",
     "agent": "DifferentialQlearningAgent",
     "exp_parameters":
@@ -7,7 +7,7 @@
         "num_runs": 1,
         "num_max_steps": 1000,
         "eval_every_n_steps": 500,
-        "save_weights": 1,
+        "save_weights": true
     },
     "env_parameters":
     {
@@ -21,7 +21,16 @@
         "fixed_parameters":
         {
             "policy_type": "egreedy",
-            "epsilon": 0.1
+            "epsilon": 0.1,
+            "epsilon_anneal_factor": 0.9995,
+            "epsilon_steps_per_anneal": 1000,
+            "alpha_anneal_factor": 0.9995,
+            "alpha_steps_per_anneal": 1000,
+            "eta_anneal_factor": 0.9995,
+            "eta_steps_per_anneal": 1000,
+            "hidden_layers": [5, 5],
+            "activation": "relu",
+            "optimizer": "adam",
         },
         "sweep_parameters":
         {

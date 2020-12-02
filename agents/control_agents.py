@@ -4,10 +4,9 @@ from keras.layers.core import Dense
 from keras.optimizers import sgd
 
 from utils.helpers import, argmax
-from agents.base_agent import BaseAgent
-from agents.fa_base_agents import MLPControlAgent
+from agents.fa_base_agents import MLPBaseAgent
 
-class DifferentialQlearningAgent(MLPControlAgent):
+class DifferentialQlearningAgent(MLPBaseAgent):
     """
     Implements the version of newly-proposed Differential Q-learning algorithm
     in which centering does not affect the learning process.
@@ -15,28 +14,6 @@ class DifferentialQlearningAgent(MLPControlAgent):
 
     def __init__(self, config):
         super().__init__(config)
-
-        self.weights_f = None
-        self.average_value = None
-        self.alpha_w_f = None
-        self.alpha_r_f = None
-
-    def Q(self, observation):
-        """returns action value vector q:S->R^{|A|}
-        Args:
-            observation: ndarray
-        Returns:
-        """
-        return self.model.predict(observation)
-
-    def max_action_value_f(self, observation):
-        """
-        returns the higher-order action value corresponding to the
-        maximum lower-order action value for the given observation.
-        Note: this is not max_a q_f(s,a)
-        """
-        q_f_sa = self.get_value_f(self.get_representation(observation, self.max_action))
-        return q_f_sa
 
     def agent_init(self, agent_info):
         super().agent_init(agent_info)
@@ -69,22 +46,6 @@ class DifferentialQlearningAgent(MLPControlAgent):
         Note: the step size parameters are separate for the value function and the reward rate in the code,
                 but will be assigned the same value in the agent parameters agent_info
         """
-
-
-
-        delta = reward - self.avg_reward + self.max_action_value(observation) - self.get_value(self.past_state)
-        self.weights += self.alpha_w * delta * self.past_state
-        # self.avg_reward += self.beta * (reward - self.avg_reward)
-        self.avg_reward += self.alpha_r * delta
-        delta_f = self.get_value(self.past_state) - self.avg_value + \
-                  self.max_action_value_f(observation) - self.get_value_f(self.past_state)
-        self.weights_f += self.alpha_w_f * delta_f * self.past_state
-        self.avg_value += self.alpha_r_f * delta_f
-
-        action = self.policy(observation)
-        state = self.get_representation(observation, action)
-        self.past_state = state
-        self.past_action = action
 
         return self.past_action
 

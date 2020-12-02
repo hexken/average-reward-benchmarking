@@ -35,9 +35,11 @@ class DifferentialQlearningAgent(MLPBaseAgent):
 
         # The Diff Q-Learning updates, adapted to work with an ER buffer and target netork
         if self.time_step % self.steps_per_target_network_update == 0 \
-            and len(self.er_buffer) >
+                and len(self.er_buffer) > self.batch_size:
+            # optimize
+            batch = self.er_buffer.sample_batch(self.batch_size)
 
-
+        # update params
 
         return self.past_action
 

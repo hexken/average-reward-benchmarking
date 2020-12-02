@@ -25,10 +25,14 @@
             "epsilon": 0.1,
             "epsilon_anneal_factor": 0.9995,
             "epsilon_steps_per_anneal": 1000,
+
             "alpha_anneal_factor": 0.9995,
             "alpha_steps_per_anneal": 1000,
+            "alpha_end": 0.001,
+
             "eta_anneal_factor": 0.9995,
             "eta_steps_per_anneal": 1000,
+
             "hidden_layer_sizes": [5, 5],
             "er_buffer_capacity": 1000,
             "steps_per_target_network_update": 10

@@ -25,9 +25,9 @@ class FABaseAgent(BaseAgent):
         self.rand_generator = None
         self.choose_action = None  # the policy (e-greedy/greedy/random)
 
+        self.alpha = None
         self.epsilon = None
         self.avg_reward = None
-        self.avg_value = None
         self.time_step = None
 
         self.Q_current = None  # probably convenient to store this so we don't have to keep evaluating our NN
@@ -90,10 +90,12 @@ class FABaseAgent(BaseAgent):
 
     def agent_init(self, agent_info):
         """Setup for the agent called when the experiment first starts."""
+        assert 'alpha' in agent_info
         self.policy = self.set_policy(agent_info)
         self.rand_generator = np.random.RandomState(agent_info.get('random_seed', 47))
         self.avg_reward = 0.0
-        self.time_step = 0  # for debugging
+        self.alpha = agent_info['alpha']
+        self.time_step = 0
 
     def agent_start(self, observation):
         """The first method called when the experiment starts,
@@ -180,5 +182,6 @@ class MLPBaseAgent(FABaseAgent):
         self.er_buffer = ERBuffer(self.rand_generator, agent_info['er_buffer_capacity'])
         self.batch_size = agent_info['batch_size']
 
-        self.optimizer = torch.optim.rmsprop
-        self.loss = torch.nn.loss.SmoothL1Loss
+        self.optimizer = torch.optim.RMSprop(self.policy_network.parameters(), lr=self.alpha)
+        # TODO might have to tune beta (SmoothL1Loss param) also
+        self.loss = torch.nn.SmoothL1Loss()

@@ -5,7 +5,7 @@ from keras.optimizers import sgd
 
 from utils.helpers import, argmax
 from agents.base_agent import BaseAgent
-from agents.fa_agents import MLPControlAgent
+from agents.fa_base_agents import MLPControlAgent
 
 class DifferentialQlearningAgent(MLPControlAgent):
     """
@@ -21,7 +21,7 @@ class DifferentialQlearningAgent(MLPControlAgent):
         self.alpha_w_f = None
         self.alpha_r_f = None
 
-    def get_qs(self, observation):
+    def Q(self, observation):
         """returns action value vector q:S->R^{|A|}
         Args:
             observation: ndarray
@@ -81,7 +81,7 @@ class DifferentialQlearningAgent(MLPControlAgent):
         self.weights_f += self.alpha_w_f * delta_f * self.past_state
         self.avg_value += self.alpha_r_f * delta_f
 
-        action = self.choose_action(observation)
+        action = self.policy(observation)
         state = self.get_representation(observation, action)
         self.past_state = state
         self.past_action = action

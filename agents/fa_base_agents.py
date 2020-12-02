@@ -19,18 +19,18 @@ class FAControlAgent(BaseAgent):
         self.num_states = config['num_states']  # this could also be the size of the observation vector
 
         self.rand_generator = None
-        self.choose_action = None  # the policy (e-greedy/greedy/random)
+        self.policy = None  # the policy (e-greedy/greedy/random)
 
         self.epsilon = None
         self.avg_reward = None
         self.avg_value = None
-        self.q_s = None
+        self.q_s = None # probably convenient to store this so we don't have to keep evaluating our NN
 
         self.past_action = None
         self.past_state = None
         self.timestep = None
 
-    def choose_action_egreedy(self):
+    def egreedy_policy(self):
         """returns an action using an epsilon-greedy policy w.r.t. the current action-value function.
         Args:
             observation (List)
@@ -45,7 +45,7 @@ class FAControlAgent(BaseAgent):
 
         return action
 
-    def choose_action_greedy(self):
+    def greeedy_policy(self):
         """returns an action using a greedy policy w.r.t. the current action-value function.
         Args:
             observation (List)
@@ -54,7 +54,7 @@ class FAControlAgent(BaseAgent):
         """
         return argmax(self.rand_generator, self.q_s)
 
-    def choose_action_random(self):
+    def random_policy(self):
         """returns a random action indifferent to the current action-value function.
         Args:
         Returns:
@@ -62,18 +62,20 @@ class FAControlAgent(BaseAgent):
         """
         return self.rand_generator.choice(self.num_actions)
 
-    def pick_policy(self, agent_info):
+    def set_policy(self, agent_info):
         """returns the method that'll pick num_actions based on the argument"""
         policy_type = agent_info.get('policy_type', 'egreedy')
         if policy_type == 'random':
-            return self.choose_action_random
+            return self.random_policy
         elif policy_type == 'greedy':
-            return self.choose_action_greedy
+            return self.greeedy_policy
         elif policy_type == 'egreedy':
             self.epsilon = agent_info.get('epsilon', 0.1)
-            return self.choose_action_egreedy
+            return self.egreedy_policy
+        else:
+            raise ValueError(f"'{policy_type}' is not a valid policy.")
 
-    def get_q_s(self, observation):
+    def Q(self, observation):
         """returns an array of action values at the state representation
         Args:
             observation : ndarray
@@ -85,7 +87,7 @@ class FAControlAgent(BaseAgent):
 
     def agent_init(self, agent_info):
         """Setup for the agent called when the experiment first starts."""
-        self.choose_action = self.pick_policy(agent_info)
+        self.policy = self.set_policy(agent_info)
 
         self.avg_reward = 0.0
         self.avg_value = 0.0
@@ -103,8 +105,8 @@ class FAControlAgent(BaseAgent):
             (integer) the first action the agent takes.
         """
 
-        self.q_s = self.get_q_s(observation)
-        self.past_action = self.choose_action(observation)
+        self.Q_current = self.Q(observation)
+        self.past_action = self.policy(observation)
         self.past_state = observation
         self.timestep += 1
 
@@ -203,7 +205,7 @@ class MLPControlAgent(FAControlAgent):
         self.weights_f += self.alpha_w_f * delta_f * self.past_state
         self.avg_value += self.alpha_r_f * delta_f
 
-        action = self.choose_action(observation)
+        action = self.policy(observation)
         state = self.get_representation(observation, action)
         self.past_state = state
         self.past_action = action

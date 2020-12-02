@@ -11,8 +11,8 @@ class DifferentialQlearningAgent(MLPBaseAgent):
     in which centering does not affect the learning process.
     """
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, agent_info):
+        super().__init__(agent_info)
 
     def agent_init(self, agent_info):
         super().agent_init(agent_info)
@@ -31,6 +31,13 @@ class DifferentialQlearningAgent(MLPBaseAgent):
         Note: the step size parameters are separate for the value function and the reward rate in the code,
                 but will be assigned the same value in the agent parameters agent_info
         """
+        self.er_buffer.add(self.past_state, self.past_action, reward, observation)
+
+        # The Diff Q-Learning updates, adapted to work with an ER buffer and target netork
+        if self.time_step % self.steps_per_target_network_update == 0 \
+            and len(self.er_buffer) >
+
+
 
         return self.past_action
 

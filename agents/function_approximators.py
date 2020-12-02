@@ -19,4 +19,4 @@ class MLP(nn.Module):
             self.fc.add_module(nn.ReLU())
 
     def forward(self, x):
-        return self.fc(x)
+        return self.fc(x.view())

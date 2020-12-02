@@ -1,12 +1,11 @@
-from abc import ABCMeta, abstractmethod
-
 import numpy as np
-import torch.nn as nn
-
+import torch
 from utils.helpers import argmax
 from agents.base_agent import BaseAgent
 from agents.function_approximators import MLP
 from agents.er_buffer import ERBuffer
+
+from abc import ABCMeta, abstractmethod
 
 
 class FABaseAgent(BaseAgent):
@@ -24,7 +23,7 @@ class FABaseAgent(BaseAgent):
         self.num_states = agent_info['num_states']  # this could also be the size of the observation vector
 
         self.rand_generator = None
-        self.policy = None  # the policy (e-greedy/greedy/random)
+        self.choose_action = None  # the policy (e-greedy/greedy/random)
 
         self.epsilon = None
         self.avg_reward = None
@@ -114,7 +113,7 @@ class FABaseAgent(BaseAgent):
 
     def finalize_step(self, observation):
         """ Finalizes a control agents step. Call after parameter updates."""
-        action = self.policy(observation)
+        action = self.choose_action(observation)
         self.past_state = observation
         self.past_action = action
         self.time_step += 1
@@ -151,11 +150,17 @@ class MLPBaseAgent(FABaseAgent):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, agent_info):
+        super().__init__(agent_info)
         self.policy_network = None
         self.target_network = None
+        self.steps_per_target_network_update = None
+
         self.er_buffer = None
+        self.batch_size = None
+
+        self.optimizer = None
+        self.loss = None
 
     def agent_init(self, agent_info):
         super().agent_init(agent_info)
@@ -163,7 +168,17 @@ class MLPBaseAgent(FABaseAgent):
         assert "er_buffer_capacity" in agent_info
         assert "steps_per_target_network_update" in agent_info
         assert "hidden_layer_sizes" in agent_info
+        assert "steps_per_target_network_update" in agent_info
+        assert "batch_size" in agent_info
 
         self.policy_network = MLP(agent_info)
         self.target_network = MLP(agent_info)
+        self.target_network.load_state_dict(self.policy_network.state_dict())
+        self.steps_per_target_network_update = agent_info['steps_per_target_network_update']
+        self.target_network.eval()
+
         self.er_buffer = ERBuffer(self.rand_generator, agent_info['er_buffer_capacity'])
+        self.batch_size = agent_info['batch_size']
+
+        self.optimizer = torch.optim.rmsprop
+        self.loss = torch.nn.loss.SmoothL1Loss

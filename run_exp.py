@@ -1,4 +1,4 @@
-import os, sys, time
+import os, sys, time, random
 import numpy as np
 import argparse
 from utils.sweeper import Sweeper
@@ -6,6 +6,7 @@ from agents import *
 from environments import *
 from experiments import *
 from utils.helpers import validate_output_folder
+import torch
 
 parser = argparse.ArgumentParser(description="Run an experiment based on parameters specified in a configuration file")
 parser.add_argument('--config-file', required=True,
@@ -25,6 +26,16 @@ cfg_end_idx = int(args.cfg_end) if args.cfg_end != -1 else sweeper.total_combina
 print(output_folder)
 print('\n\nRunning configurations %d to %d...\n\n' % (cfg_start_idx, cfg_end_idx))
 
+
+# TODO this is hacky, integrate it into the config file? Another seed is set in each agents random object
+def set_seeds(seed):
+    random.seed(seed)
+    np.random.seed(seed + 1)
+    torch.manual_seed(seed + 2)
+    torch.cuda.manual_seed_all(seed + 3)
+
+
+set_seeds(47)
 start_time = time.time()
 
 for i in range(cfg_start_idx, cfg_end_idx):
@@ -35,7 +46,7 @@ for i in range(cfg_start_idx, cfg_end_idx):
     experiment = getattr(sys.modules[__name__], args.exp)
     log = experiment(env, agent, config)
     log['params'] = config
-    filename = "{}_{}".format(config['exp_name'], 15+i)
+    filename = "{}_{}".format(config['exp_name'], 15 + i)
     print('Saving results in: %s\n**********\n' % (filename))
     np.save("{}{}".format(output_folder, filename), log)
     print("Time elapsed: {:.2} minutes\n\n".format((time.time() - start_time) / 60))

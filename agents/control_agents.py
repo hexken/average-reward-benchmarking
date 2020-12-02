@@ -1,10 +1,10 @@
 import numpy as np
-from keras.models import Sequential
-from keras.layers.core import Dense
-from keras.optimizers import sgd
 
-from utils.helpers import, argmax
+from utils.helpers import argmax
 from agents.fa_base_agents import MLPBaseAgent
+from agents.er_buffer import ERBuffer
+from agents.function_approximators import MLP
+
 
 class DifferentialQlearningAgent(MLPBaseAgent):
     """
@@ -17,20 +17,6 @@ class DifferentialQlearningAgent(MLPBaseAgent):
 
     def agent_init(self, agent_info):
         super().agent_init(agent_info)
-
-        self.avg_value = 0.0
-        self.alpha_w_f = agent_info.get("alpha_w_f", 0.1)
-        self.eta_f = agent_info.get("eta_f", 1)
-        self.alpha_r_f = self.eta_f * self.alpha_w_f
-
-        self.model = Sequential(
-    [
-        Dense(4, activation="relu", name="input"),
-        Dense(16, activation="relu", name="hidden1"),
-        Dense(2, name="output"),
-    ]
-        )
-        self.model.compile(optimizer='sgd', loss='mse')
 
     def agent_step(self, reward, observation):
         """A step taken by the agent.

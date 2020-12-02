@@ -14,7 +14,7 @@ class ERBuffer:
         if len(self.buffer) < self.capacity:
             self.buffer.append(None)
         self.buffer[self.next_pos] = Experience(*args)
-        next_pos = (self.next_pos + 1) % self.capacity
+        self.next_pos = (self.next_pos + 1) % self.capacity
 
     def sample_batch(self, batch_size):
         return self.random.sample(self.buffer, batch_size)

@@ -1,8 +1,9 @@
-import numpy as np
-impor torch.nn
-from utils.helpers import argmax
 from abc import ABCMeta, abstractmethod
 
+import numpy as np
+import torch.nn as nn
+
+from utils.helpers import argmax
 from agents.base_agent import BaseAgent
 
 
@@ -26,7 +27,7 @@ class FABaseAgent(BaseAgent):
         self.epsilon = None
         self.avg_reward = None
         self.avg_value = None
-        self.timestep = None
+        self.time_step = None
 
         self.Q_current = None  # probably convenient to store this so we don't have to keep evaluating our NN
         self.past_action = None
@@ -93,7 +94,7 @@ class FABaseAgent(BaseAgent):
         self.rand_generator = np.random.RandomState(agent_info.get('random_seed', 47))
 
         self.avg_reward = 0.0
-        self.timestep = 0  # for debugging
+        self.time_step = 0  # for debugging
 
     def agent_start(self, observation):
         """The first method called when the experiment starts,
@@ -107,7 +108,7 @@ class FABaseAgent(BaseAgent):
         self.Q_current = self.Q(observation)
         self.past_action = self.policy(observation)
         self.past_state = observation
-        self.timestep += 1
+        self.time_step += 1
 
         return self.past_action
 
@@ -116,7 +117,7 @@ class FABaseAgent(BaseAgent):
         action = self.policy(observation)
         self.past_state = observation
         self.past_action = action
-        self.timestep += 1
+        self.time_step += 1
 
     def agent_step(self, reward, observation):
         """A step taken by the agent.
@@ -142,18 +143,16 @@ class FABaseAgent(BaseAgent):
         pass
 
 
+
 class MLPBaseAgent(FABaseAgent):
     """
-    Implements the version of newly-proposed Differential Q-learning algorithm
-    in which centering does not affect the learning process.
+    Implements an MLP agent that takes state vector as input and outputs an action-value vector
     """
 
     __metaclass__ = ABCMeta
 
     def __init__(self, config):
         super().__init__(config)
-        self.model = None
-        self.params = None
 
     def agent_init(self, agent_info):
         super().agent_init(agent_info)

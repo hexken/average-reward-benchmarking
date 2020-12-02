@@ -3,7 +3,6 @@ import numpy as np
 from utils.helpers import argmax
 from agents.fa_base_agents import MLPBaseAgent
 from agents.er_buffer import ERBuffer
-from agents.function_approximators import MLP
 
 
 class DifferentialQlearningAgent(MLPBaseAgent):

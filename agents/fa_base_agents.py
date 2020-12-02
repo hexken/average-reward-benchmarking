@@ -5,6 +5,8 @@ import torch.nn as nn
 
 from utils.helpers import argmax
 from agents.base_agent import BaseAgent
+from agents.function_approximators import MLP
+from agents.er_buffer import ERBuffer
 
 
 class FABaseAgent(BaseAgent):
@@ -16,10 +18,10 @@ class FABaseAgent(BaseAgent):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, config):
+    def __init__(self, agent_info):
         super().__init__()
-        self.num_actions = config['num_actions']
-        self.num_states = config['num_states']  # this could also be the size of the observation vector
+        self.num_actions = agent_info['num_actions']
+        self.num_states = agent_info['num_states']  # this could also be the size of the observation vector
 
         self.rand_generator = None
         self.policy = None  # the policy (e-greedy/greedy/random)
@@ -44,7 +46,7 @@ class FABaseAgent(BaseAgent):
         if self.rand_generator.rand() < self.epsilon:
             action = self.rand_generator.choice(self.num_actions)
         else:
-            action = argmax(self.rand_generator)
+            action = argmax(self.rand_generator, self.Q_current)
 
         return action
 
@@ -55,7 +57,7 @@ class FABaseAgent(BaseAgent):
         Returns:
             (Integer) The action taken w.r.t. the aforementioned greedy policy
         """
-        return argmax(self.rand_generator, self.q_s)
+        return argmax(self.rand_generator, self.Q_current)
 
     def random_policy(self):
         """returns a random action indifferent to the current action-value function.
@@ -90,9 +92,7 @@ class FABaseAgent(BaseAgent):
     def agent_init(self, agent_info):
         """Setup for the agent called when the experiment first starts."""
         self.policy = self.set_policy(agent_info)
-
         self.rand_generator = np.random.RandomState(agent_info.get('random_seed', 47))
-
         self.avg_reward = 0.0
         self.time_step = 0  # for debugging
 
@@ -113,7 +113,7 @@ class FABaseAgent(BaseAgent):
         return self.past_action
 
     def finalize_step(self, observation):
-        """ Finalizes a control agents step. Call after updating all parameters."""
+        """ Finalizes a control agents step. Call after parameter updates."""
         action = self.policy(observation)
         self.past_state = observation
         self.past_action = action
@@ -143,32 +143,27 @@ class FABaseAgent(BaseAgent):
         pass
 
 
-
 class MLPBaseAgent(FABaseAgent):
     """
-    Implements an MLP agent that takes state vector as input and outputs an action-value vector
+    Implements an MLP agent that takes state vector as input and outputs an action-value vector.
+    Uses an er buffer and target network.
     """
 
     __metaclass__ = ABCMeta
 
     def __init__(self, config):
         super().__init__(config)
+        self.policy_network = None
+        self.target_network = None
+        self.er_buffer = None
 
     def agent_init(self, agent_info):
         super().agent_init(agent_info)
 
-    def agent_step(self, reward, observation):
-        """A step taken by the agent.
-        Performs the Direct RL step, chooses the next action.
-        Args:
-            reward (float): the reward received for taking the last action taken
-            observation : ndarray
-                the state observation from the environment's step based on where
-                the agent ended up after the last step
-        Returns:
-            (integer) The action the agent takes given this observation.
+        assert "er_buffer_capacity" in agent_info
+        assert "steps_per_target_network_update" in agent_info
+        assert "hidden_layer_sizes" in agent_info
 
-        Note: the step size parameters are separate for the value function and the reward rate in the code,
-                but will be assigned the same value in the agent parameters agent_info
-        """
-        raise NotImplementedError
+        self.policy_network = MLP(agent_info)
+        self.target_network = MLP(agent_info)
+        self.er_buffer = ERBuffer(self.rand_generator, agent_info['er_buffer_capacity'])

@@ -184,12 +184,12 @@ def compute_rmsve_tvr(target, weights, weighting):
     return compute_rmsve(target, transformed_weights, weighting)
 
 
-def get_agent_weights(agent):
-    agent_weights = agent.weights
-    if 'Differential' in type(agent).__name__:
-        offset = agent.avg_value
-        agent_weights -= offset
-    return agent_weights
+# def get_agent_weights(agent):
+#     agent_weights = agent.weights
+#     if 'Differential' in type(agent).__name__:
+#         offset = agent.avg_value
+#         agent_weights -= offset
+#     return agent_weights
 
 
 if __name__=='__main__':

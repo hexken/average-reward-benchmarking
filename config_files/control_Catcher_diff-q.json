@@ -12,14 +12,15 @@
     "env_parameters":
     {
       "width": 32,
-      "height": 32,
-      "init_lives": 100000000
+      "height": 32
     },
 
     "agent_parameters":
     {
         "fixed_parameters":
         {
+            "num_states": 4,
+            "num_actions": 2,
             "policy_type": "egreedy",
             "epsilon": 0.1,
             "epsilon_anneal_factor": 0.9995,

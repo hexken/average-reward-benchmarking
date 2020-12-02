@@ -3,20 +3,20 @@ import torch.nn as nn
 
 class MLP(nn.Module):
     """
-    A simple MLP built from an experiment config file that defines the hidden layer sizes.
+    A simple MLP.
     """
 
-    def __init__(self, config):
+    def __init__(self, layer_sizes):
+        """
+        layer_sizes[0] is input, layer_sizes[-1] is output
+        Args:
+            layer_sizes:
+        """
         super().__init__()
-        hidden_layer_sizes = config['hidden_layers']
         self.fc = nn.Sequential()
-        self.fc.add_module('input', nn.Linear(config['num_states'], hidden_layer_sizes[0]))
-
-        for i in range(1, len(hidden_layer_sizes)):
-            self.fc.add_module(f'hidden_{i}', nn.Linear(hidden_layer_sizes[i], hidden_layer_sizes[i + 1]))
-            self.fc.add_module(f'activation_{i}', nn.ReLU())
-
-        self.fc.add_module('output', nn.Linear(hidden_layer_sizes[-1], config['num_actions']))
+        for i in range(0, len(layer_sizes) - 1):
+            self.fc.add_module(nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
+            self.fc.add_module(nn.ReLU())
 
     def forward(self, x):
         return self.fc(x)

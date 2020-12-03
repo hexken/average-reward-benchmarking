@@ -1,7 +1,7 @@
 from collections import namedtuple
 from random import sample
 
-Experience = namedtuple('Experience', ['state', 'action', 'reward', 'next_state'])
+Experience = namedtuple('Experience', ['state', 'action', 'reward', 'avg_reward_estimate', 'next_state'])
 
 
 class ERBuffer:

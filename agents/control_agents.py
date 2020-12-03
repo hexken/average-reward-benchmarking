@@ -13,9 +13,11 @@ class DifferentialQlearningAgent(MLPBaseAgent):
 
     def __init__(self, agent_info):
         super().__init__(agent_info)
+        self.avg_reward_estimate = None
 
     def agent_init(self, agent_info):
         super().agent_init(agent_info)
+        self.avg_reward_estimate = 0.0
 
     def agent_step(self, reward, observation):
         """A step taken by the agent.
@@ -31,7 +33,7 @@ class DifferentialQlearningAgent(MLPBaseAgent):
         Note: the step size parameters are separate for the value function and the reward rate in the code,
                 but will be assigned the same value in the agent parameters agent_info
         """
-        self.er_buffer.add(self.past_state, self.past_action, reward, observation)
+        self.er_buffer.add(self.past_state, self.past_action, reward, self.avg_reward_estimate, observation)
 
         # The Diff Q-Learning updates, adapted to work with an ER buffer and target netork
         if self.time_step % self.steps_per_target_network_update == 0 \
@@ -47,27 +49,27 @@ class DifferentialQlearningAgent(MLPBaseAgent):
 
             state_batch = experience_batch.state
             action_batch = experience_batch.action
-            reward_batch = experience_batch.reward
             next_state_batch = experience_batch.next_state
 
             # gather using action_batch to index into state value vector batch
-            state_action_values = self.policy_network(state_batch).gather(1, action_batch)
-            next_state_values = self.target_network(next_state_batch).max(1)[0].detach()
+            state_action_values = self.Q_network(state_batch).gather(1, action_batch)
+            # get the max_a Q_target(s',a) values
+            max_next_state_action_values = self.target_network(next_state_batch).max(1)[0].detach()
 
-            target_batch = reward_batch - next_state_values  + reward_batch
+            rewards = np.array(experience_batch.reward)
+            avg_reward_stimates = np.array(experience_batch.avg_reward_estimate)
+            y = rewards - avg_reward_stimates + max_next_state_action_values
 
-            loss = self.loss_fn(state_action_values, expected_state_action_values.unsqueeze(1))
+            loss = self.loss_fn(y, state_action_values)
 
             self.optimizer.zero_grad()
-
             loss.backward()
-            for param in policy_net.parameters():
+            for param in self.Q_network.parameters():
                 param.grad.data.clamp_(-1, 1)
-            optimizer.step()
+            self.optimizer.step()
 
-
-
-        # update params
+            if self.time_step % self.steps_per_target_network_update == 0:
+                self.target_network.load_state_dict(self.Q_network.state_dict())
 
         return self.past_action
 

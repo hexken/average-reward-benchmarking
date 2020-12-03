@@ -33,10 +33,8 @@ class FABaseAgent(BaseAgent):
         self.epsilon_decay = False
         self.epsilon_end = None
 
-        self.avg_reward = None
         self.time_step = None
 
-        self.Q_current = None  # probably convenient to store this so we don't have to keep evaluating our NN
         self.past_action = None
         self.past_state = None
 
@@ -96,22 +94,11 @@ class FABaseAgent(BaseAgent):
         else:
             raise ValueError(f"'{policy_type}' is not a valid policy.")
 
-    @abstractmethod
-    def Q(self, observation):
-        """returns an array of action values at the state representation
-        Args:
-            observation : ndarray
-        Returns:
-            q(s) : ndarray q_s
-        """
-        raise NotImplementedError
-
     def agent_init(self, agent_info):
         """Setup for the agent called when the experiment first starts."""
         assert 'alpha' in agent_info
-        self.policy = self.set_policy(agent_info)
+        self.choose_action = self.set_policy(agent_info)
         self.rand_generator = np.random.RandomState(agent_info.get('random_seed', 47))
-        self.avg_reward = 0.0
         self.alpha = agent_info['alpha']
         self.time_step = 0
 
@@ -124,7 +111,6 @@ class FABaseAgent(BaseAgent):
             (integer) the first action the agent takes.
         """
 
-        self.Q_current = self.Q(observation)
         self.past_action = self.policy(observation)
         self.past_state = observation
         self.time_step += 1
@@ -176,7 +162,7 @@ class MLPBaseAgent(FABaseAgent):
 
     def __init__(self, agent_info):
         super().__init__(agent_info)
-        self.policy_network = None
+        self.Q_network = None
         self.target_network = None
         self.steps_per_target_network_update = None
 
@@ -202,15 +188,15 @@ class MLPBaseAgent(FABaseAgent):
             print('No GPU available, using the CPU.')
             device = torch.device("cpu")
 
-        self.policy_network = MLP(agent_info).to(device)
+        self.Q_network = MLP(agent_info).to(device)
         self.target_network = MLP(agent_info).to(device)
         self.target_network.load_state_dict(self.policy_network.state_dict())
         self.steps_per_target_network_update = agent_info['steps_per_target_network_update']
         self.target_network.eval()
 
-        self.er_buffer = ERBuffer(self.rand_generator, agent_info['er_buffer_capacity'])
+        self.er_buffer = ERBuffer(agent_info['er_buffer_capacity'])
         self.batch_size = agent_info['batch_size']
 
-        self.optimizer = torch.optim.RMSprop(self.policy_network.parameters(), lr=self.alpha)
+        self.optimizer = torch.optim.RMSprop(self.Q_network.parameters(), lr=self.alpha)
         # TODO might have to tune beta (SmoothL1Loss param) also
-        self.loss = torch.nn.SmoothL1Loss()
+        self.loss_fn = torch.nn.SmoothL1Loss()

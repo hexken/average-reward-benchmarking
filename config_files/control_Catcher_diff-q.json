@@ -22,9 +22,10 @@
             "num_states": 4,
             "num_actions": 2,
             "policy_type": "egreedy",
-            "epsilon": 0.1,
-            "epsilon_anneal_factor": 0.9995,
-            "epsilon_steps_per_anneal": 1000,
+            "epsilon_start": 1.0,
+            "epsilon_end": 0.1,
+            "epsilon_decay": true,
+            "epsilon_decay_interval": 10000,
 
             "alpha_anneal_factor": 0.9995,
             "alpha_steps_per_anneal": 1000,
@@ -35,6 +36,7 @@
 
             "hidden_layer_sizes": [5, 5],
             "er_buffer_capacity": 1000,
+            "batch_size": 32,
             "steps_per_target_network_update": 10
         },
         "sweep_parameters":

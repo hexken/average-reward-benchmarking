@@ -15,8 +15,8 @@ class MLP(nn.Module):
         super().__init__()
         self.fc = nn.Sequential()
         for i in range(0, len(layer_sizes) - 1):
-            self.fc.add_module(nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
-            self.fc.add_module(nn.ReLU())
+            self.fc.add_module(f'layer_{i}', nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
+            self.fc.add_module(f'activation_{i}', nn.ReLU())
 
     def forward(self, x):
         return self.fc(x.view(x.size(0), -1))

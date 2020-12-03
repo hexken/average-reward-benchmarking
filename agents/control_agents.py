@@ -52,8 +52,7 @@ class DifferentialQlearningAgent(MLPBaseAgent):
 
             # gather using action_batch to index into state value vector batch
             state_action_values = self.policy_network(state_batch).gather(1, action_batch)
-            next_state_values = torch.zeros(self.batch_size, device=self.device)
-            next_state_values[non_final_mask] = target_net().max(1)[0].detach()
+            next_state_values = self.target_network(next_state_batch).max(1)[0].detach()
 
             target_batch = reward_batch - next_state_values  + reward_batch
 

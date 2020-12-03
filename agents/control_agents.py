@@ -113,6 +113,13 @@ class RlearningAgent(MLPControlAgent):
             (integer) The action the agent takes given this observation.
         """
         self.frame_count += 1
+        
+        # reward clipping?
+        #reward = np.sign(reward)
+        
+        # test red circle
+        reward = -1 * reward
+        
         '''
         if reward != 0:
             print(reward)
@@ -139,17 +146,17 @@ class RlearningAgent(MLPControlAgent):
                 
                 # rho rescale to favor recent rho updates
                 #rho_rescale = (indices / len(self.rewards_history))**2
-                rho_rescale = (indices / self.max_memory_length)
+                #rho_rescale = (indices / self.max_memory_length)**2
                 
                 # sample from replay buffer
                 state_sample = np.array([self.state_history[i] for i in indices])
                 state_next_sample = np.array([self.state_next_history[i] for i in indices])
                 rewards_sample = np.array([self.rewards_history[i] for i in indices])
                 action_sample = [self.action_history[i] for i in indices]
-                update_rho_samples = np.array([self.update_rho_history[i] for i in indices])
+                #update_rho_samples = np.array([self.update_rho_history[i] for i in indices])
                 
                 target = rewards_sample - self.avg_reward + \
-                    self.max_action_value(state_next_sample)
+                    self.gamma * self.max_action_value(state_next_sample)
                 
                 masks = tf.one_hot(action_sample, self.num_actions, dtype=tf.float64)
                 
@@ -162,18 +169,11 @@ class RlearningAgent(MLPControlAgent):
                 self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
                 
                 # previously had 'update average reward' here
-                rho_update_array = update_rho_samples * rho_rescale * (target - q_action)
-                self.avg_reward += self.alpha_r * tf.reduce_sum(rho_update_array)
+                #rho_update_array = update_rho_samples * rho_rescale * (target - q_action)
+                #self.avg_reward += self.alpha_r * tf.reduce_sum(rho_update_array)
         
-        if self.frame_count % self.update_target_network == 0:
-            print(f'UPDATE TARGET. frame: {self.frame_count}')
-            print(loss)
-            print(self.epsilon)
-            print(self.avg_reward)
-            self.model_target.set_weights(self.model.get_weights())
-    
-        '''
-        if self.frame_count % self.update_avg_reward == 0:
+        #'''
+        if self.frame_count % self.update_avg_reward == 0 and self.use_avg_reward == True:
             ### average reward batch update
             # sample previous 'update_target_network' samples from replay buffer
             state_sample = np.array(self.state_history[-self.update_avg_reward:])
@@ -192,8 +192,15 @@ class RlearningAgent(MLPControlAgent):
             
             # update average reward
             rho_update_array = update_rho_samples * (target - q_action)
-            self.avg_reward += self.alpha_r * tf.reduce_sum(rho_update_array)
-        '''
+            self.avg_reward += self.alpha_r * tf.reduce_sum(rho_update_array).numpy()
+        #'''
+        
+        if self.frame_count % self.update_target_network == 0:
+            print(f'UPDATE TARGET. frame: {self.frame_count}')
+            print(loss)
+            print(self.epsilon)
+            print(f'AR: {self.avg_reward}')
+            self.model_target.set_weights(self.model.get_weights())
         
         if len(self.rewards_history) > self.max_memory_length:
             del self.action_history[:1]

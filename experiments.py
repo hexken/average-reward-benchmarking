@@ -145,7 +145,8 @@ def run_exp_learning_control_no_eval(env, agent, config):
 
             reward, obs, action, _ = rl_glue.rl_step()
             rewards_all_train[run][timestep] = reward
-        weights_final[run] = rl_glue.agent.weights
+        #weights_final[run] = rl_glue.agent.weights
+        #rl_glue.agent.model.save_weights(f'/results/control/{run}.h5')
 
     tqdm.write('Train_RewardRate_total\t= %f' % (np.mean(rewards_all_train)))
     tqdm.write('Train_RewardRate_lasthalf\t= %f\n' % np.mean(rewards_all_train[:,rewards_all_train.shape[1]//2:]))

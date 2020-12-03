@@ -42,7 +42,7 @@ class FAControlAgent(BaseAgent):
             (Integer) The action taken w.r.t. the aforementioned epsilon-greedy policy
         """
 
-        if self.rand_generator.rand() < self.epsilon or self.frame_count < self.epsilon_random_frames:
+        if self.rand_generator.rand() < self.epsilon:
             action = self.rand_generator.choice(self.num_actions)
         else:
             q_s = self.get_one_value(observation)
@@ -199,17 +199,17 @@ class MLPControlAgent(FAControlAgent):
         self.avg_reward = 0.0 + self.avg_reward_init
         
         # new for MLP
-        self.batch_size = 128 # 128
-        self.hidden_layers = [32,32] # [32,32]
+        self.batch_size = 512 # 128
+        self.hidden_layers = [16,16] # [32,32]
         
         self.model = self.create_model()
         self.model_target = self.create_model()
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=self.alpha_w,
-                                                  clipnorm=1.0)
+                                                  clipnorm=1.0) # could change clipnorm?
         self.loss_function = tf.keras.losses.Huber()
-        self.update_after_actions = 2 # 8
-        self.update_target_network = 1600 # 1600
-        #self.update_avg_reward = 64
+        self.update_after_actions = 1 # 8
+        self.update_target_network = 10000 # 1600
+        self.update_avg_reward = 10
         
         # frame counts
         self.frame_count = 0
@@ -223,6 +223,10 @@ class MLPControlAgent(FAControlAgent):
         
         # experience replay
         self.init_experience_replay()
+        
+        # to test q-learning vs r-learning
+        self.gamma = 1.0
+        self.use_avg_reward = True
         
     
     def create_model(self):
@@ -250,12 +254,13 @@ class MLPControlAgent(FAControlAgent):
         self.update_rho_history = []
         
         # random action frames
-        self.epsilon_random_frames = 4000 # 4000
+        self.epsilon_random_frames = 20000 # 4000
         # greedy action frames (for epsilon decay)
-        self.epsilon_greedy_frames = 40000 # 40000
+        self.epsilon_greedy_frames = 100000 # 40000
         # maximum replay length
-        self.max_memory_length = 80000 # 80000
+        self.max_memory_length = 100000 # 80000
     
     def decay_epsilon(self):
-        self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
-        self.epsilon = max(self.epsilon, self.epsilon_min)
+        if self.frame_count > self.epsilon_random_frames:
+            self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
+            self.epsilon = max(self.epsilon, self.epsilon_min)

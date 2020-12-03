@@ -1,11 +1,11 @@
 {
     "exp_name": "test",
-    "env": "CatcherEnv",
+    "env": "PuckWorldEnv",
     "agent": "RlearningAgent",
     "exp_parameters":
     {
         "num_runs": 1,
-        "num_max_steps": 320000,
+        "num_max_steps": 200000,
         "eval_every_n_steps": 1,
         "save_weights": 0
     },
@@ -22,7 +22,8 @@
         },
         "sweep_parameters":
         {
-            "alpha_w": [0.0001]
+            "alpha_w": [0.00025],
+	    "eta": [0.1]
         }
     }
 }

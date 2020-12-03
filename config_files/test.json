@@ -23,7 +23,7 @@
         "sweep_parameters":
         {
             "alpha_w": [0.00025],
-	    "eta": [0.1]
+	    "eta": [10.0]
         }
     }
 }

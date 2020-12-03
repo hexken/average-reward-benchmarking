@@ -118,7 +118,7 @@ class RlearningAgent(MLPControlAgent):
         #reward = np.sign(reward)
         
         # test red circle
-        reward = -1 * reward
+        #reward = -1 * reward
         
         '''
         if reward != 0:

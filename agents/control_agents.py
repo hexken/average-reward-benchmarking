@@ -35,7 +35,7 @@ class DifferentialQlearningAgent(MLPBaseAgent):
         """
         self.er_buffer.add(self.past_state, self.past_action, reward, self.avg_reward_estimate, observation)
 
-        # The Diff Q-Learning updates, adapted to work with an ER buffer and target netork
+        # The Diff Q-Learning updates, adapted to work with an ER buffer and target network
         if self.time_step % self.steps_per_target_network_update == 0 \
                 and len(self.er_buffer) >= self.batch_size:
 
@@ -57,8 +57,8 @@ class DifferentialQlearningAgent(MLPBaseAgent):
             max_next_state_action_values = self.target_network(next_state_batch).max(1)[0].detach()
 
             rewards = np.array(experience_batch.reward)
-            avg_reward_stimates = np.array(experience_batch.avg_reward_estimate)
-            y = rewards - avg_reward_stimates + max_next_state_action_values
+            avg_reward_estimates = np.array(experience_batch.avg_reward_estimate)
+            y = rewards - avg_reward_estimates + max_next_state_action_values
 
             loss = self.loss_fn(y, state_action_values)
 

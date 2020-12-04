@@ -5,7 +5,7 @@ Experience = namedtuple('Experience', ['state', 'action', 'reward', 'avg_reward_
 
 
 class ERBuffer:
-    def __init__(self, capacity, rand_generator):
+    def __init__(self, capacity):
         self.capacity = capacity
         self.buffer = []
         self.next_pos = 0

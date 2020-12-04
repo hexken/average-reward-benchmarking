@@ -1,9 +1,11 @@
 import numpy as np
 import torch
-from utils.helpers import argmax, decay_epsilon
+
+from utils.helpers import argmax
 from agents.base_agent import BaseAgent
 from agents.function_approximators import MLP
 from agents.er_buffer import ERBuffer
+from agents.epsilon import Epsilon
 
 from abc import ABCMeta, abstractmethod
 
@@ -28,39 +30,37 @@ class FABaseAgent(BaseAgent):
 
         self.alpha = None
 
-        self.epsilon_start = None
-        self.warmup_steps = None
-        self.epsilon_decay = False
-        self.epsilon_end = None
-
+        self.epsilon = None
         self.time_step = None
 
         self.past_action = None
         self.past_state = None
 
-    def egreedy_policy(self):
+    # TODO make policies into a class?
+
+    def egreedy_policy(self, observation, time_step):
         """returns an action using an epsilon-greedy policy w.r.t. the current action-value function.
         Returns:
             (Integer) The action taken w.r.t. the aforementioned epsilon-greedy policy
         """
 
-        if self.rand_generator.rand() < self.epsilon:
+        if self.rand_generator.rand() < self.epsilon(time_step):
             action = self.rand_generator.choice(self.num_actions)
         else:
-            action = argmax(self.rand_generator, self.Q_current)
+            action = argmax(self.rand_generator, self.get_action_values(observation))
 
         return action
 
-    def greedy_policy(self):
+    def greedy_policy(self, observation, time_step):
         """returns an action using a greedy policy w.r.t. the current action-value function.
         Args:
             observation (List)
         Returns:
             (Integer) The action taken w.r.t. the aforementioned greedy policy
         """
-        return argmax(self.rand_generator, self.Q_current)
+        return argmax(self.rand_generator, self.get_action_values(observation))
 
-    def random_policy(self):
+    def random_policy(self, observation, time_step):
         """returns a random action indifferent to the current action-value function.
         Args:
         Returns:
@@ -80,16 +80,19 @@ class FABaseAgent(BaseAgent):
             self.policy_type = policy_type
             return self.greedy_policy
         elif policy_type == 'egreedy':
-            assert "epsilon_start" in agent_info
-            assert "epsilon_decay" in agent_info
+            assert 'epsilon_start' in agent_info
+            assert 'epsilon_end' in agent_info
+            assert 'warmup_steps' in agent_info
+            assert 'decay_period' in agent_info
+
             self.policy_type = policy_type
-            self.epsilon_start = agent_info.get('epsilon_start')
-            self.epsilon_decay = agent_info.get('epsilon_decay')
-            if self.epsilon_decay:
-                assert "epsilon_end" in agent_info
-                assert "warmup_steps" in agent_info
-                self.epsilon_end = agent_info('epsilon_end')
-                self.warmup_steps = agent_info('warmup_steps')
+            epsilon_start = agent_info.get('epsilon_start')
+            epsilon_end = agent_info.get('epsilon_end')
+            warmup_steps = agent_info.get('warmup_steps')
+            decay_period = agent_info.get('decay_period')
+
+            self.epsilon = Epsilon(epsilon_start, epsilon_end, warmup_steps, decay_period)
+
             return self.egreedy_policy
         else:
             raise ValueError(f"'{policy_type}' is not a valid policy.")
@@ -111,7 +114,7 @@ class FABaseAgent(BaseAgent):
             (integer) the first action the agent takes.
         """
 
-        self.past_action = self.policy(observation)
+        self.past_action = self.choose_action(observation)
         self.past_state = observation
         self.time_step += 1
 
@@ -119,8 +122,6 @@ class FABaseAgent(BaseAgent):
 
     def finalize_step(self, observation):
         """ Finalizes a control agents step. Call after parameter updates."""
-        if self.decay:
-            decay_epsilon(self.decay_period, self.time_step, self.warmup_steps, self.epsilon_start, self.epsilon_end)
 
         action = self.choose_action(observation)
         self.past_state = observation
@@ -140,7 +141,17 @@ class FABaseAgent(BaseAgent):
         Returns:
             (integer) The action the agent takes given this observation.
         """
-        raise NotImplementedError
+
+    @abstractmethod
+    def get_action_values(self, observation):
+        """
+
+        Args:
+            observation:
+
+        Returns:
+
+        """
 
     def agent_end(self, reward):
         """Run when the agent terminates.
@@ -190,7 +201,7 @@ class MLPBaseAgent(FABaseAgent):
 
         self.Q_network = MLP(agent_info).to(device)
         self.target_network = MLP(agent_info).to(device)
-        self.target_network.load_state_dict(self.policy_network.state_dict())
+        self.target_network.load_state_dict(self.Q_network.state_dict())
         self.steps_per_target_network_update = agent_info['steps_per_target_network_update']
         self.target_network.eval()
 
@@ -200,3 +211,6 @@ class MLPBaseAgent(FABaseAgent):
         self.optimizer = torch.optim.RMSprop(self.Q_network.parameters(), lr=self.alpha)
         # TODO might have to tune beta (SmoothL1Loss param) also
         self.loss_fn = torch.nn.SmoothL1Loss()
+
+    def get_action_values(self, observation):
+        return self.Q_network(observation)

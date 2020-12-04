@@ -1,5 +1,7 @@
-import gym
 from abc import ABCMeta, abstractmethod
+
+import gym
+
 from environments.base_environment import BaseEnvironment
 
 

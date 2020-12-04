@@ -1,3 +1,5 @@
+from abc import ABCMeta, abstractmethod
+
 import numpy as np
 import torch
 
@@ -6,8 +8,6 @@ from agents.base_agent import BaseAgent
 from agents.function_approximators import MLP
 from agents.er_buffer import ERBuffer
 from agents.epsilon import Epsilon
-
-from abc import ABCMeta, abstractmethod
 
 
 class FABaseAgent(BaseAgent):

@@ -1,7 +1,7 @@
 import torch
 import numpy as np
-from agents.er_buffer import Experience
 
+from agents.er_buffer import Experience
 from agents.fa_base_agents import MLPBaseAgent
 
 

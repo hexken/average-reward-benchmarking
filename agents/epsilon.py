@@ -1,5 +1,4 @@
 from numpy import clip
-from numpy.core._multiarray_umath import ndarray
 
 
 class Epsilon:

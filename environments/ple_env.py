@@ -1,5 +1,5 @@
 # base imports
-from environments.base_environment import BaseEnvironment, OneHotEnv
+from environments.base_environment import BaseEnvironment
 import numpy as np
 
 # PLE imports
@@ -7,8 +7,9 @@ from ple import PLE
 from ple.games.catcher import Catcher
 from ple.games.puckworld import PuckWorld
 
+
 class PLEEnv(BaseEnvironment):
-    def __init__(self):
+    def __init__(self, env_info):
         reward = None
         observation = None
         termination = None
@@ -19,7 +20,7 @@ class PLEEnv(BaseEnvironment):
     def env_init(self, env_info={}):
         self.p = PLE(self.game, fps=30, display_screen=False, force_fps=False)
         self.start_state = np.array(list(self.p.getGameState().values()))
-        self.reward_obs_term = [0.0, None, False]
+        self.reward_obs_term = (0.0, None, False)
         self.actions = self.p.getActionSet()
         self.num_actions = len(self.actions)
         self.state_size = self.start_state.shape
@@ -42,6 +43,7 @@ class PLEEnv(BaseEnvironment):
         self.reward_obs_term = [reward, self.current_state, False]
 
         return self.reward_obs_term
+
 
 class CatcherEnv(PLEEnv):
     def __init__(self):

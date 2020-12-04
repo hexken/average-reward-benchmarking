@@ -1,5 +1,5 @@
 from environments.base_environment import BaseEnvironment
-from environments.catcher_game import Catch
+from environments.catcher_game import CatcherGame
 import numpy as np
 
 
@@ -7,6 +7,8 @@ class Catcher(BaseEnvironment):
 
     def __init__(self):
         super().__init__()
+        self.state_space = 4
+        self.action_space = 2
         self.catcher = None
         self.action = None
         self.rand_generator = None
@@ -21,7 +23,7 @@ class Catcher(BaseEnvironment):
         assert 'grid_size' in env_info
 
         self.rand_generator = np.random.RandomState(env_info.get('random_seed', 42))
-        self.catcher = Catch(env_info['grid_size'])
+        self.catcher = CatcherGame(env_info['grid_size'])
         self.reward_obs_term = (0.0, self.catcher.observe(), False)
 
     def env_start(self):
@@ -43,6 +45,6 @@ class Catcher(BaseEnvironment):
             (float, state, Boolean): a tuple of the reward, state observation,
                 and boolean indicating if terminal.
         """
-        self.reward_obs_term = self.catcher.act(action)
+        self.reward_obs_term = self.catcher.update(action)
 
         return self.reward_obs_term

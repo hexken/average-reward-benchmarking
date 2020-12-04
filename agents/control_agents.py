@@ -11,13 +11,17 @@ class DifferentialQlearningAgent(MLPBaseAgent):
     in which centering does not affect the learning process.
     """
 
-    def __init__(self, agent_info):
-        super().__init__(agent_info)
+    def __init__(self, num_actions):
+        super().__init__(num_actions)
         self.avg_reward_estimate = None
+        self.eta = None
 
     def agent_init(self, agent_info):
         super().agent_init(agent_info)
         self.avg_reward_estimate = 0.0
+
+        assert 'eta' in agent_info
+        self.eta = agent_info['eta']
 
     def agent_step(self, reward, observation):
         """A step taken by the agent.
@@ -33,13 +37,15 @@ class DifferentialQlearningAgent(MLPBaseAgent):
         Note: the step size parameters are separate for the value function and the reward rate in the code,
                 but will be assigned the same value in the agent parameters agent_info
         """
+        observation_t = torch.tensor(observation, device=self.device)
+        past_state = torch.tensor(self.past_state, device=self.device)
         self.er_buffer.add(self.past_state, self.past_action, reward, self.avg_reward_estimate, observation)
+        delta = reward - self.avg_reward_estimate + max(self.target_network(observation_t)) - self.Q_network( past_state)
+        self.avg_reward_estimate += self.avg_reward_estimate * self.eta * self.alpha * delta
 
-        # The Diff Q-Learning updates, adapted to work with an ER buffer and target network
-        if self.time_step % self.steps_per_target_network_update == 0 \
-                and len(self.er_buffer) >= self.batch_size:
-
+        if len(self.er_buffer) >= self.batch_size:
             # optimize
+            # The Diff Q-Learning updates, adapted to work with an ER buffer and target network
 
             # [(exp1),...,(expn)]
             experience_list = self.er_buffer.sample_batch(self.batch_size)
@@ -68,8 +74,8 @@ class DifferentialQlearningAgent(MLPBaseAgent):
                 param.grad.data.clamp_(-1, 1)
             self.optimizer.step()
 
-            if self.time_step % self.steps_per_target_network_update == 0:
-                self.target_network.load_state_dict(self.Q_network.state_dict())
+        if self.time_step % self.steps_per_target_network_update == 0:
+            self.target_network.load_state_dict(self.Q_network.state_dict())
 
         return self.past_action
 
@@ -78,7 +84,7 @@ class DifferentialQlearningAgent(MLPBaseAgent):
 
 
 def test_DiffQ():
-    agent = DifferentialQlearningAgent({'num_states': 3, 'num_actions': 3})
+    agent = DifferentialQlearningAgent()
     agent.agent_init({'random_seed': 32, 'epsilon': 0.5})
     observation = np.array([1, 0, 1])
     action = agent.agent_start(observation)

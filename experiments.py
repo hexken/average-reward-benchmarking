@@ -73,7 +73,7 @@ def run_exp_learning_control(env, agent, config):
                 if save_weights:
                     weights_all[run][eval_idx] = rl_glue.agent.weights
                     avg_v_all[run][eval_idx] = rl_glue.agent.avg_value
-                    avg_r_all[run][eval_idx] = rl_glue.agent.avg_reward
+                    avg_r_all[run][eval_idx] = rl_glue.agent.avg_reward_estimate
 
                 eval_idx += 1
 
@@ -104,8 +104,8 @@ def run_exp_learning_control_no_eval(env, agent, config):
     num_runs = config['exp_parameters']['num_runs']
     max_steps = config['exp_parameters']['num_max_steps']
     eval_every_n_steps = config['exp_parameters']['eval_every_n_steps']
-    save_weights = config['exp_parameters'].get('save_weights', 0)
-    num_weights = config['exp_parameters'].get('num_weights', 1)
+    # save_weights = config['exp_parameters'].get('save_weights', 0)
+    # num_weights = config['exp_parameters'].get('num_weights', 1)
 
     env_info = config['env_parameters']
     agent_info = config['agent_parameters']
@@ -116,13 +116,14 @@ def run_exp_learning_control_no_eval(env, agent, config):
     rewards_all_train = np.zeros((num_runs, max_steps+1))
     # avg_rewards_all = np.zeros((num_runs, max_steps))
     assert max_steps % eval_every_n_steps == 0  # ideally not necessary, but enforcing nonetheless
-    weights_final = np.zeros((num_runs, num_weights))
-    weights_all = np.zeros((num_runs, int(max_steps/eval_every_n_steps) + 1, num_weights))
+    # weights_final = np.zeros((num_runs, num_weights))
+    # weights_all = np.zeros((num_runs, int(max_steps/eval_every_n_steps) + 1, num_weights))
     avg_v_all = np.zeros((num_runs, int(max_steps/eval_every_n_steps) + 1))
     avg_r_all = np.zeros((num_runs, int(max_steps/eval_every_n_steps) + 1))
 
     for run in tqdm(range(num_runs)):
 
+        #TODO check to make sure random seeds are actually consistantly set
         agent_info['random_seed'] = run
         env_info['random_seed'] = run
 
@@ -130,33 +131,33 @@ def run_exp_learning_control_no_eval(env, agent, config):
         rl_glue = RLGlue(env, agent)
         rl_glue.rl_init(agent_info, env_info)
         rl_glue.rl_start()
-        assert num_weights == rl_glue.agent.weights.size, "exp_params:num_weights should match number of agent weights"
+        # assert num_weights == rl_glue.agent.weights.size, "exp_params:num_weights should match number of agent weights"
 
         eval_idx = 0
 
         for timestep in range(max_steps+1):
 
             if timestep % eval_every_n_steps == 0:
-                if save_weights:
-                    weights_all[run][eval_idx] = rl_glue.agent.weights
-                    avg_v_all[run][eval_idx] = rl_glue.agent.avg_value
-                    avg_r_all[run][eval_idx] = rl_glue.agent.avg_reward
+                # if save_weights:
+                #     weights_all[run][eval_idx] = rl_glue.agent.weights
+                # avg_v_all[run][eval_idx] = rl_glue.agent.avg_value
+                avg_r_all[run][eval_idx] = rl_glue.agent.avg_reward_estimate
                 eval_idx += 1
 
             reward, obs, action, _ = rl_glue.rl_step()
             rewards_all_train[run][timestep] = reward
-        weights_final[run] = rl_glue.agent.weights
+        # weights_final[run] = rl_glue.agent.weights
 
     tqdm.write('Train_RewardRate_total\t= %f' % (np.mean(rewards_all_train)))
     tqdm.write('Train_RewardRate_lasthalf\t= %f\n' % np.mean(rewards_all_train[:,rewards_all_train.shape[1]//2:]))
     tqdm.write('AgentRewardRate_total\t= %f' % np.mean(avg_r_all))
     tqdm.write('AgentRewardRate_lasthalf\t= %f\n' % np.mean(avg_r_all[:,avg_r_all.shape[1]//2:]))
     log_data['rewards_all_train'] = rewards_all_train
-    log_data['weights_final'] = weights_final
-    if save_weights:
-        log_data['weights_all'] = weights_all
-        log_data['avg_v_all'] = avg_v_all
-        log_data['avg_r_all'] = avg_r_all
+    # log_data['weights_final'] = weights_final
+    # if save_weights:
+    #     log_data['weights_all'] = agent.save_state
+    #     log_data['avg_v_all'] = avg_v_all
+    #     log_data['avg_r_all'] = avg_r_all
 
     return log_data
 

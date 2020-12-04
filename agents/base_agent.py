@@ -15,9 +15,8 @@ class BaseAgent:
 
     __metaclass__ = ABCMeta
 
-    def __init__(self):
-        self.num_actions = None
-        self.num_states = None
+    def __init__(self, num_actions):
+        self.action_space = num_actions
 
     @abstractmethod
     def agent_init(self, agent_info):

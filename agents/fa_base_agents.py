@@ -19,11 +19,8 @@ class FABaseAgent(BaseAgent):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, agent_info):
-        super().__init__()
-        self.num_actions = agent_info['num_actions']
-        self.num_states = agent_info['num_states']  # this could also be the size of the observation vector
-
+    def __init__(self, num_actions):
+        super().__init__(num_actions)
         self.rand_generator = None
         self.policy_type = None
         self.choose_action = None  # the policy (e-greedy/greedy/random)
@@ -45,7 +42,7 @@ class FABaseAgent(BaseAgent):
         """
 
         if self.rand_generator.rand() < self.epsilon(time_step):
-            action = self.rand_generator.choice(self.num_actions)
+            action = self.rand_generator.randint(self.action_space)
         else:
             action = argmax(self.rand_generator, self.get_action_values(observation))
 
@@ -66,7 +63,7 @@ class FABaseAgent(BaseAgent):
         Returns:
             (Integer) The action taken
         """
-        return self.rand_generator.choice(self.num_actions)
+        return self.rand_generator.randint(self.action_space)
 
     def set_policy(self, agent_info):
         """returns the method that'll pick num_actions based on the argument"""
@@ -114,7 +111,7 @@ class FABaseAgent(BaseAgent):
             (integer) the first action the agent takes.
         """
 
-        self.past_action = self.choose_action(observation)
+        self.past_action = self.choose_action(observation, self.time_step)
         self.past_state = observation
         self.time_step += 1
 
@@ -176,6 +173,7 @@ class MLPBaseAgent(FABaseAgent):
         self.Q_network = None
         self.target_network = None
         self.steps_per_target_network_update = None
+        self.device = None
 
         self.er_buffer = None
         self.batch_size = None
@@ -188,19 +186,20 @@ class MLPBaseAgent(FABaseAgent):
 
         assert "er_buffer_capacity" in agent_info
         assert "steps_per_target_network_update" in agent_info
-        assert "hidden_layer_sizes" in agent_info
+        assert "layer_sizes" in agent_info
         assert "steps_per_target_network_update" in agent_info
         assert "batch_size" in agent_info
 
         if torch.cuda.is_available():
-            device = torch.device("cuda")
+            self.device = torch.device("cuda")
             print('Using GPU:', torch.cuda.get_device_name(0))
         else:
             print('No GPU available, using the CPU.')
-            device = torch.device("cpu")
+            self.device = torch.device("cpu")
 
-        self.Q_network = MLP(agent_info).to(device)
-        self.target_network = MLP(agent_info).to(device)
+        layer_sizes = agent_info['layer_sizes']
+        self.Q_network = MLP(layer_sizes).to(self.device)
+        self.target_network = MLP(layer_sizes).to(self.device)
         self.target_network.load_state_dict(self.Q_network.state_dict())
         self.steps_per_target_network_update = agent_info['steps_per_target_network_update']
         self.target_network.eval()

@@ -16,8 +16,7 @@ class RLGlue:
 
     def __init__(self, env_class, agent_class):
         self.environment = env_class()
-        self.agent = agent_class({'num_states': self.environment.num_states,
-                                  'num_actions': self.environment.num_actions})
+        self.agent = agent_class(self.environment.action_space)
         self.total_reward = None
         self.last_action = None
         self.num_steps = None

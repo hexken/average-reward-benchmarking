@@ -37,10 +37,12 @@ class DifferentialQlearningAgent(MLPBaseAgent):
         Note: the step size parameters are separate for the value function and the reward rate in the code,
                 but will be assigned the same value in the agent parameters agent_info
         """
-        observation_t = torch.tensor(observation, device=self.device)
+        observation_tensor = torch.tensor(observation, device=self.device)
         past_state = torch.tensor(self.past_state, device=self.device)
+
         self.er_buffer.add(self.past_state, self.past_action, reward, self.avg_reward_estimate, observation)
-        delta = reward - self.avg_reward_estimate + max(self.target_network(observation_t)) - self.Q_network( past_state)
+
+        delta = reward - self.avg_reward_estimate + max(self.target_network(observation_tensor)) - self.Q_network(past_state)
         self.avg_reward_estimate += self.avg_reward_estimate * self.eta * self.alpha * delta
 
         if len(self.er_buffer) >= self.batch_size:

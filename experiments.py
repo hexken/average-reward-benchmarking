@@ -124,8 +124,8 @@ def run_exp_learning_control_no_eval(env, agent, config):
     for run in tqdm(range(num_runs)):
 
         #TODO check to make sure random seeds are actually consistantly set
-        agent_info['random_seed'] = run
-        env_info['random_seed'] = run
+        agent_info['seed'] = run
+        env_info['seed'] = run
 
         # training instance
         rl_glue = RLGlue(env, agent)

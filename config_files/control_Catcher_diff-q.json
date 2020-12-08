@@ -19,9 +19,9 @@
             "policy_type": "egreedy",
             "epsilon_start": 1.0,
             "epsilon_end": 0.1,
-            "warmup_steps": 100,
+            "warmup_steps": 1000,
             "epsilon_decay": true,
-            "decay_period": 10000,
+            "decay_period": 5000,
 
             "alpha_anneal_factor": 0.9995,
             "alpha_steps_per_anneal": 1000,

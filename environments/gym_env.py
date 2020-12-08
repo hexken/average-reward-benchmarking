@@ -30,7 +30,7 @@ class GymEnvBase(BaseEnvironment):
 class Catcher(GymEnvBase):
     # TODO normalize is on by default (arg to CatcherEnv())
     def __init__(self):
-        super().__init__()
+        super(Catcher, self).__init__()
         self.action_space = 2
         self.state_space = 4
 

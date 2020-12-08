@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, ABC
 
 import numpy as np
 import torch
@@ -20,7 +20,7 @@ class FABaseAgent(BaseAgent):
     __metaclass__ = ABCMeta
 
     def __init__(self, num_actions):
-        super().__init__(num_actions)
+        super(FABaseAgent, self).__init__(num_actions)
         self.rand_generator = None
         self.policy_type = None
         self.choose_action = None  # the policy (e-greedy/greedy/random)
@@ -67,7 +67,6 @@ class FABaseAgent(BaseAgent):
 
     def set_policy(self, agent_info):
         """returns the method that'll pick num_actions based on the argument"""
-        assert "policy_type" in agent_info
 
         policy_type = agent_info.get('policy_type')
         if policy_type == 'random':
@@ -77,10 +76,6 @@ class FABaseAgent(BaseAgent):
             self.policy_type = policy_type
             return self.greedy_policy
         elif policy_type == 'egreedy':
-            assert 'epsilon_start' in agent_info
-            assert 'epsilon_end' in agent_info
-            assert 'warmup_steps' in agent_info
-            assert 'decay_period' in agent_info
 
             self.policy_type = policy_type
             epsilon_start = agent_info.get('epsilon_start')
@@ -96,7 +91,6 @@ class FABaseAgent(BaseAgent):
 
     def agent_init(self, agent_info):
         """Setup for the agent called when the experiment first starts."""
-        assert 'alpha' in agent_info
         self.choose_action = self.set_policy(agent_info)
         self.rand_generator = np.random.RandomState(agent_info.get('random_seed', 47))
         self.alpha = agent_info['alpha']
@@ -139,17 +133,6 @@ class FABaseAgent(BaseAgent):
             (integer) The action the agent takes given this observation.
         """
 
-    @abstractmethod
-    def get_action_values(self, observation):
-        """
-
-        Args:
-            observation:
-
-        Returns:
-
-        """
-
     def agent_end(self, reward):
         """Run when the agent terminates.
         A direct-RL update with the final transition. Not applicable for continuing tasks
@@ -160,7 +143,7 @@ class FABaseAgent(BaseAgent):
         pass
 
 
-class MLPBaseAgent(FABaseAgent):
+class MLPBaseAgent(FABaseAgent, ABC):
     """
     Implements an MLP agent that takes state vector as input and outputs an action-value vector.
     Uses an er buffer and target network.
@@ -169,7 +152,7 @@ class MLPBaseAgent(FABaseAgent):
     __metaclass__ = ABCMeta
 
     def __init__(self, agent_info):
-        super().__init__(agent_info)
+        super(MLPBaseAgent, self).__init__(agent_info)
         self.Q_network = None
         self.target_network = None
         self.steps_per_target_network_update = None
@@ -208,8 +191,5 @@ class MLPBaseAgent(FABaseAgent):
         self.batch_size = agent_info['batch_size']
 
         self.optimizer = torch.optim.RMSprop(self.Q_network.parameters(), lr=self.alpha)
-        # TODO might have to tune beta (SmoothL1Loss param) also
+        # TODO might have to tune beta (SmoothL1Loss param), maybe add learning rate scheduler
         self.loss_fn = torch.nn.SmoothL1Loss()
-
-    def get_action_values(self, observation):
-        return self.Q_network(observation)

@@ -12,15 +12,13 @@ class DifferentialQlearningAgent(MLPBaseAgent):
     """
 
     def __init__(self, num_actions):
-        super().__init__(num_actions)
+        super(DifferentialQlearningAgent, self).__init__(num_actions)
         self.avg_reward_estimate = None
         self.eta = None
 
     def agent_init(self, agent_info):
         super().agent_init(agent_info)
         self.avg_reward_estimate = 0.0
-
-        assert 'eta' in agent_info
         self.eta = agent_info['eta']
 
     def agent_step(self, reward, observation):
@@ -37,17 +35,14 @@ class DifferentialQlearningAgent(MLPBaseAgent):
         Note: the step size parameters are separate for the value function and the reward rate in the code,
                 but will be assigned the same value in the agent parameters agent_info
         """
-        observation = torch.tensor(observation)
-        last_state = torch.tensor(self.last_state)
-        reward = torch.tensor(reward)
-        last_action = torch.tensor(self.last_action)
+
+        # for now we'll keep ERbuffer and model both on device
+        observation = torch.tensor(observation, device=self.device, dtype=torch.float32)
+        last_state = torch.tensor(self.last_state, device=self.device, dtype=torch.float32)
+        reward = torch.tensor(reward, device=self.device, dtype=torch.float32)
+        last_action = torch.tensor(self.last_action, device=self.device, dtype=torch.int64)
 
         self.er_buffer.add(last_state, last_action, reward, observation)
-
-        observation = observation.to(dtype=torch.float32, device=self.device)
-        last_state = last_state.to(dtype=torch.float32, device=self.device)
-        delta = reward - self.avg_reward_estimate + max(self.target_network(observation)) - self.Q_network(last_state)
-        self.avg_reward_estimate += self.avg_reward_estimate * self.eta * self.alpha * delta
 
         if len(self.er_buffer) >= self.batch_size:
             # optimize
@@ -59,31 +54,34 @@ class DifferentialQlearningAgent(MLPBaseAgent):
             # Experience(s=(exp1.s,...expn.s), a=(exp1.a,...,expn.a),...)
             experience_batch = Experience(*zip(*experience_list))
 
-            state_batch = torch.cat(experience_batch.state)
-            action_batch = torch.cat(experience_batch.action)
-            next_state_batch = torch.cat(experience_batch.next_state)
+            state_batch = torch.stack(experience_batch.state)
+            next_state_batch = torch.stack(experience_batch.next_state)
 
             # gather using action_batch to index into state value vector batch
-            state_action_values = self.Q_network(state_batch).gather(1, action_batch)
+            action_batch = torch.tensor(experience_batch.action).view(-1, 1)
+            # all_state_action_values = self.Q_network(state_batch)
+            state_action_values = torch.gather(self.Q_network(state_batch), 1, action_batch)
             # get the max_a Q_target(s',a) values
+            # next_state_action_values =  self.target_network(next_state_batch)
             max_next_state_action_values = self.target_network(next_state_batch).max(1)[0].detach()
+            rewards = torch.tensor(experience_batch.reward)
 
-            rewards = np.array(experience_batch.reward)
-            avg_reward_estimates = np.array(experience_batch.avg_reward_estimate)
-            y = rewards - avg_reward_estimates + max_next_state_action_values
-
+            y = rewards - self.avg_reward_estimate + max_next_state_action_values - state_action_values
             loss = self.loss_fn(y, state_action_values)
-
             self.optimizer.zero_grad()
             loss.backward()
+            self.optimizer.step()
             for param in self.Q_network.parameters():
                 param.grad.data.clamp_(-1, 1)
-            self.optimizer.step()
+
+            with torch.no_grad():
+                self.avg_reward_estimate += self.avg_reward_estimate * self.eta * self.alpha * y
 
         if self.time_step % self.steps_per_target_network_update == 0:
             self.target_network.load_state_dict(self.Q_network.state_dict())
 
         self.finalize_step(observation=observation)
+
         return self.last_action
 
 
@@ -91,7 +89,7 @@ class DifferentialQlearningAgent(MLPBaseAgent):
 
 
 def test_DiffQ():
-    agent = DifferentialQlearningAgent()
+    agent = DifferentialQlearningAgent(2)
     agent.agent_init({'random_seed': 32, 'epsilon': 0.5})
     observation = np.array([1, 0, 1])
     action = agent.agent_start(observation)

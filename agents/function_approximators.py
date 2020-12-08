@@ -12,11 +12,14 @@ class MLP(Module):
         Args:
             layer_sizes:
         """
-        super().__init__()
-        self.fc = Sequential()
+        super(MLP, self).__init__()
+        self.layers = Sequential()
+
         for i in range(0, len(layer_sizes) - 1):
-            self.fc.add_module(f'layer_{i}', Linear(layer_sizes[i], layer_sizes[i + 1]))
-            self.fc.add_module(f'activation_{i}', ReLU())
+            self.layers.add_module(f'layer_{i}', Linear(layer_sizes[i], layer_sizes[i + 1]))
+            if i != len(layer_sizes) - 2:
+                self.layers.add_module(f'activation_{i}', ReLU())
 
     def forward(self, x):
-        return self.fc(x)
+        x = self.layers(x)
+        return x

@@ -22,7 +22,7 @@ class RLGlue:
         self.num_steps = None
         self.num_episodes = None
 
-    def rl_init(self, agent_init_info={}, env_init_info={}):
+    def rl_init(self, agent_init_info=None, env_init_info=None):
         """Initial method called when RLGlue experiment is created"""
         self.environment.env_init(env_init_info)
         self.agent.agent_init(agent_init_info)
@@ -31,7 +31,7 @@ class RLGlue:
         self.num_steps = 0
         self.num_episodes = 0
 
-    def rl_start(self, agent_start_info={}, env_start_info={}):
+    def rl_start(self, agent_start_info=None, env_start_info=None):
         """Starts RLGlue experiment
 
         Returns:

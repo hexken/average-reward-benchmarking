@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 import gym
+import gym_pygame
 
 from environments.base_environment import BaseEnvironment
 
@@ -9,10 +10,10 @@ class GymEnvBase(BaseEnvironment):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        super().__init__()
         self.env = None
 
     def env_init(self, game, env_info):
+        super().env_init()  # does nothing atm, but perhaps in the future..
         self.env = gym.make(game)
         self.env.seed(env_info['seed'])
 
@@ -20,13 +21,18 @@ class GymEnvBase(BaseEnvironment):
         return self.env.reset()
 
     def env_step(self, action):
-        obs, reward, term = self.env.step(action)
+        obs, reward, term, _ = self.env.step(action)  # we don't use the auxiliary info
         self.reward_obs_term = reward, obs, term
-        self.env.render()
+        # self.env.render()
         return self.reward_obs_term
 
 
-class Catcher:
+class Catcher(GymEnvBase):
     # TODO normalize is on by default (arg to CatcherEnv())
-    def env_init(selfself, env_info):
-        super().__init__('Catcher-PLE-v0', env_info)
+    def __init__(self):
+        super().__init__()
+        self.action_space = 2
+        self.state_space = 4
+
+    def env_init(self, env_info):
+        super().env_init('Catcher-PLE-v0', env_info)

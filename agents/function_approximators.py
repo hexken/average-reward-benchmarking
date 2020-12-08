@@ -19,4 +19,4 @@ class MLP(Module):
             self.fc.add_module(f'activation_{i}', ReLU())
 
     def forward(self, x):
-        return self.fc(x.view(x.size(0), -1))
+        return self.fc(x)

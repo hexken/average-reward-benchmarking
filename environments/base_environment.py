@@ -20,6 +20,8 @@ class BaseEnvironment:
 
     def __init__(self):
         self.reward_obs_term = None
+        self.action_space = None
+        self.state_space = None
 
     @abstractmethod
     def env_init(self, env_info={}):

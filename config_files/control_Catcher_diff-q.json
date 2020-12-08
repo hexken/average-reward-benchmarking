@@ -1,6 +1,6 @@
 {
     "exp_name": "Catcher_DiffQ_eps_0.1_test",
-    "env": "Catcher-PLE-v0",
+    "env": "Catcher",
     "agent": "DifferentialQlearningAgent",
     "exp_parameters":
     {
@@ -30,7 +30,7 @@
             "eta_anneal_factor": 0.9995,
             "eta_steps_per_anneal": 1000,
 
-            "layer_sizes": [5, 5],
+            "layer_sizes": [4, 5, 5, 2],
             "er_buffer_capacity": 10000,
             "batch_size": 32,
             "steps_per_target_network_update": 10

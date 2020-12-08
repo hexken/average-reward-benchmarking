@@ -30,8 +30,8 @@ class FABaseAgent(BaseAgent):
         self.epsilon = None
         self.time_step = None
 
-        self.past_action = None
-        self.past_state = None
+        self.last_action = None
+        self.last_state = None
 
     # TODO make policies into a class?
 
@@ -111,18 +111,18 @@ class FABaseAgent(BaseAgent):
             (integer) the first action the agent takes.
         """
 
-        self.past_action = self.choose_action(observation, self.time_step)
-        self.past_state = observation
+        self.last_action = self.choose_action(observation, self.time_step)
+        self.last_state = observation
         self.time_step += 1
 
-        return self.past_action
+        return self.last_action
 
     def finalize_step(self, observation):
         """ Finalizes a control agents step. Call after parameter updates."""
 
-        action = self.choose_action(observation)
-        self.past_state = observation
-        self.past_action = action
+        action = self.choose_action(observation, self.time_step)
+        self.last_state = observation
+        self.last_action = action
         self.time_step += 1
 
     @abstractmethod

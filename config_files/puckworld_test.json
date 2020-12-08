@@ -1,0 +1,29 @@
+{
+    "exp_name": "test",
+    "env": "PuckWorldEnv",
+    "agent": "RlearningAgent",
+    "exp_parameters":
+    {
+        "num_runs": 1,
+        "num_max_steps": 200000,
+        "eval_every_n_steps": 1,
+        "save_weights": 0
+    },
+    "env_parameters":
+    {
+
+    },
+    "agent_parameters":
+    {
+        "fixed_parameters":
+        {
+            "policy_type": "egreedy",
+            "epsilon": 0.1
+        },
+        "sweep_parameters":
+        {
+            "alpha_w": [0.001,0.0001,0.00001],
+	    "eta": [0.1,1.0,10.0]
+        }
+    }
+}

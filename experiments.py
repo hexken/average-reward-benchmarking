@@ -36,7 +36,7 @@ def run_exp_learning_control_no_eval(env, agent, config):
         rl_glue.rl_start()
 
         eval_idx = 0
-        for time_step in range(max_steps + 1):
+        for time_step in range(1, max_steps + 1):
 
             if time_step % avg_every_n_steps == 0:
                 avg_rewards_all[run][eval_idx] = rl_glue.agent.avg_reward_estimate

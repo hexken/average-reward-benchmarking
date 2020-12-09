@@ -23,7 +23,7 @@
             "warmup_steps": 1000,
             "decay_period": 5000,
 
-            "layer_sizes": [4, 5, 5, 2],
+            "layer_sizes": [8, 5, 5, 4],
             "er_buffer_capacity": 10000,
             "batch_size": 32,
             "steps_per_target_network_update": 10

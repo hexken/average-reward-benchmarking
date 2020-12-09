@@ -38,9 +38,6 @@ class DifferentialQlearningAgent(MLPBaseAgent):
 
         # for now we'll keep ERbuffer and model both on device
         observation = torch.tensor(observation, device=self.device, dtype=torch.float32)
-        # TODO only the initial state isn't  tensor at this point?
-        if not type(self.last_state) is torch.Tensor:
-            self.last_state = torch.tensor(self.last_state, device=self.device, dtype=torch.float32)
         reward = torch.tensor(reward, device=self.device, dtype=torch.float32)
         last_action = torch.tensor(self.last_action, device=self.device, dtype=torch.int64)
 
@@ -56,8 +53,8 @@ class DifferentialQlearningAgent(MLPBaseAgent):
             experience_batch = Experience(*zip(*experience_list))
             state_batch = torch.stack(experience_batch.state)
             next_state_batch = torch.stack(experience_batch.next_state)
-
             action_batch = torch.tensor(experience_batch.action).view(-1, 1)
+
             state_action_values = torch.gather(self.Q_network(state_batch), 1, action_batch).view(-1)
             max_next_state_action_values = self.target_network(next_state_batch).max(dim=1)[0].detach()
             rewards = torch.tensor(experience_batch.reward)
@@ -78,6 +75,8 @@ class DifferentialQlearningAgent(MLPBaseAgent):
 
         self.finalize_step(observation=observation)
 
+        if self.time_step % 1000 == 0:
+            print(self.epsilon(self.time_step))
         return self.last_action
 
 

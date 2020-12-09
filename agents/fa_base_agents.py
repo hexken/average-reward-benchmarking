@@ -22,7 +22,6 @@ class FABaseAgent(BaseAgent):
     def __init__(self, num_actions):
         super(FABaseAgent, self).__init__(num_actions)
         self.rand_generator = None
-        self.policy_type = None
         self.choose_action = None  # the policy (e-greedy/greedy/random)
 
         self.alpha = None
@@ -41,7 +40,9 @@ class FABaseAgent(BaseAgent):
             (Integer) The action taken w.r.t. the aforementioned epsilon-greedy policy
         """
 
-        if self.rand_generator.rand() < self.epsilon(time_step):
+        if self.rand_generator.rand() < 0.1:
+            if time_step % 1000:
+                print(self.epsilon(time_step))
             action = self.rand_generator.randint(self.action_space)
         else:
             action = argmax(self.rand_generator, self.get_action_values(observation))
@@ -65,57 +66,32 @@ class FABaseAgent(BaseAgent):
         """
         return self.rand_generator.randint(self.action_space)
 
-    def set_policy(self, agent_info):
-        """returns the method that'll pick num_actions based on the argument"""
+    def agent_init(self, agent_info):
+        """Setup for the agent called when the experiment first starts."""
+        self.rand_generator = np.random.RandomState(agent_info.get('random_seed', 47))
+        self.alpha = agent_info['alpha']
+        self.time_step = 1
 
-        policy_type = agent_info.get('policy_type')
+        policy_type = agent_info['policy_type']
         if policy_type == 'random':
-            self.policy_type = policy_type
-            return self.random_policy
+            self.choose_action = self.random_policy
         elif policy_type == 'greedy':
-            self.policy_type = policy_type
-            return self.greedy_policy
+            self.choose_action = self.greedy_policy
         elif policy_type == 'egreedy':
-            self.policy_type = policy_type
             epsilon_start = agent_info.get('epsilon_start')
             epsilon_end = agent_info.get('epsilon_end')
             warmup_steps = agent_info.get('warmup_steps')
             decay_period = agent_info.get('decay_period')
-
             self.epsilon = Epsilon(epsilon_start, epsilon_end, warmup_steps, decay_period)
-
-            return self.egreedy_policy
+            self.choose_action = self.egreedy_policy
         else:
             raise ValueError(f"'{policy_type}' is not a valid policy.")
-
-    def agent_init(self, agent_info):
-        """Setup for the agent called when the experiment first starts."""
-        self.choose_action = self.set_policy(agent_info)
-        self.rand_generator = np.random.RandomState(agent_info.get('random_seed', 47))
-        self.alpha = agent_info['alpha']
-        self.time_step = 0
-
-    def agent_start(self, observation):
-        """The first method called when the experiment starts,
-        called after the environment starts.
-            observation (Numpy array): the state observation from the
-                environment's env_start function.
-        Returns:
-            (integer) the first action the agent takes.
-        """
-
-        self.last_action = self.choose_action(observation, self.time_step)
-        self.last_state = observation
-        self.time_step += 1
-
-        return self.last_action
 
     def finalize_step(self, observation):
         """ Finalizes a control agents step. Call after parameter updates."""
 
-        action = self.choose_action(observation, self.time_step)
+        self.last_action = self.choose_action(observation, self.time_step)
         self.last_state = observation
-        self.last_action = action
         self.time_step += 1
 
     @abstractmethod
@@ -139,6 +115,10 @@ class FABaseAgent(BaseAgent):
             reward (float): the reward the agent received for entering the
                 terminal state.
         """
+        pass
+
+    @abstractmethod
+    def get_action_values(self, observation):
         pass
 
     @abstractmethod
@@ -196,6 +176,33 @@ class MLPBaseAgent(FABaseAgent, ABC):
         self.optimizer = torch.optim.RMSprop(self.Q_network.parameters(), lr=self.alpha)
         # TODO might have to tune beta (SmoothL1Loss param), maybe add learning rate scheduler
         self.loss_fn = torch.nn.SmoothL1Loss()
+
+    def agent_start(self, observation):
+        """The first method called when the experiment starts,
+        called after the environment starts.
+            observation (Numpy array): the state observation from the
+                environment's env_start function.
+        Returns:
+            (integer) the first action the agent takes.
+        """
+
+        self.time_step = 1
+        self.last_state = torch.tensor(observation, device=self.device, dtype=torch.float32)
+        self.last_action = self.choose_action(self.last_state, self.time_step)
+
+        return self.last_action
+
+    def get_action_values(self, observation):
+        """
+        USE THIS for computing action-value when we don't want to track gradients.
+        Args:
+            observation:
+
+        Returns:
+            torch.Tensor state action value of observation
+        """
+        with torch.no_grad():
+            return self.Q_network(observation)
 
     def get_model_params(self):
         return self.Q_network.state_dict()

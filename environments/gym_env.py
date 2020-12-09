@@ -37,6 +37,7 @@ class Catcher(GymEnvBase):
     def env_init(self, env_info):
         super().env_init('Catcher-PLE-v0', env_info)
 
+
 class PuckWorld(GymEnvBase):
     # TODO normalize is on by default (arg to CatcherEnv())
     def __init__(self):
@@ -45,4 +46,4 @@ class PuckWorld(GymEnvBase):
         self.state_space = 8
 
     def env_init(self, env_info):
-        super().env_init('Puckworld-PLE-v0', env_info)
+        super().env_init('PuckWorld-PLE-v0', env_info)

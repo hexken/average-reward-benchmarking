@@ -1,7 +1,7 @@
 {
-    "exp_name": "catcher_50k_RL",
-    "env": "CatcherEnv",
-    "agent": "RlearningAgent",
+    "exp_name": "puckworld_50k",
+    "env": "PuckWorldEnv",
+    "agent": "RVIQlearningAgent",
     "exp_parameters":
     {
         "num_runs": 1,
@@ -22,8 +22,7 @@
         },
         "sweep_parameters":
         {
-            "alpha_w": [0.001,0.0001,0.00001],
-	    "eta": [10]
+            "alpha_w": [0.001,0.0001,0.00001]
         }
     }
 }

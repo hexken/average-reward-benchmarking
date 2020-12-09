@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from abc import ABCMeta, abstractmethod
 
@@ -189,6 +190,9 @@ class MLPControlAgent(FAControlAgent):
         # self.num_states = agent_info["num_states"]
         self.alpha_w = agent_info.get("alpha_w", 0.1)
         self.eta = agent_info.get("eta", 1)
+        time.sleep(5)
+        print('AAAAAAAAAAAA')
+        print(self.alpha_w, self.eta)
         # self.alpha_r = agent_info.get("alpha_r", self.alpha_w)
         self.alpha_r = self.eta * self.alpha_w
         self.value_init = agent_info.get("value_init", 0)
@@ -208,7 +212,7 @@ class MLPControlAgent(FAControlAgent):
                                                   clipnorm=1.0) # could change clipnorm?
         self.loss_function = tf.keras.losses.Huber()
         self.update_after_actions = 1 # 8
-        self.update_target_network = 10000 # 1600
+        self.update_target_network = 5000 #10000 # 1600
         self.update_avg_reward = 10
         
         # frame counts
@@ -227,6 +231,11 @@ class MLPControlAgent(FAControlAgent):
         # to test q-learning vs r-learning
         self.gamma = 1.0
         self.use_avg_reward = True
+        
+        # rvi q-learning stuff
+        self.num_reference_states = 64
+        self.references_actions = []
+        self.references_states = []
         
     
     def create_model(self):
@@ -254,9 +263,9 @@ class MLPControlAgent(FAControlAgent):
         self.update_rho_history = []
         
         # random action frames
-        self.epsilon_random_frames = 20000 # 4000
+        self.epsilon_random_frames = 5000 # 4000
         # greedy action frames (for epsilon decay)
-        self.epsilon_greedy_frames = 100000 # 40000
+        self.epsilon_greedy_frames = 25000 # 40000
         # maximum replay length
         self.max_memory_length = 100000 # 80000
     

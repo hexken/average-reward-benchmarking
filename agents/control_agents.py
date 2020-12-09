@@ -40,8 +40,9 @@ class DifferentialQlearningAgent(MLPBaseAgent):
         observation = torch.tensor(observation, device=self.device, dtype=torch.float32)
         reward = torch.tensor(reward, device=self.device, dtype=torch.float32)
         last_action = torch.tensor(self.last_action, device=self.device, dtype=torch.int64)
+        last_state = torch.tensor(self.last_state, device=self.device, dtype=torch.float32)
 
-        self.er_buffer.add(self.last_state, last_action, reward, observation)
+        self.er_buffer.add(last_state, last_action, reward, observation)
 
         if len(self.er_buffer) >= self.batch_size:
             # The Diff Q-Learning updates, adapted to work with an ER buffer and target network

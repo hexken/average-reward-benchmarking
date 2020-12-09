@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod, ABC
+from warnings import filterwarnings
 
 import numpy as np
 import torch
@@ -152,6 +153,7 @@ class MLPBaseAgent(FABaseAgent, ABC):
         assert "steps_per_target_network_update" in agent_info
         assert "batch_size" in agent_info
 
+        # @filterwarnings("ignore:CUDA initialization.*:UserWarning") # useless warning..
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
             print('Using GPU:', torch.cuda.get_device_name(0))

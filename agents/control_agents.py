@@ -68,7 +68,7 @@ class DifferentialQlearningAgent(MLPBaseAgent):
                 param.grad.data.clamp_(-1, 1)
 
             with torch.no_grad():
-                self.avg_reward_estimate += torch.mean(self.avg_reward_estimate * self.eta * self.alpha * y)
+                self.avg_reward_estimate += torch.mean(self.eta * self.alpha * y)
 
         if self.time_step % self.steps_per_target_network_update == 0:
             self.target_network.load_state_dict(self.Q_network.state_dict())

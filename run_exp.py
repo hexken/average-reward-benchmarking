@@ -36,12 +36,12 @@ for i in range(cfg_start_idx, cfg_end_idx):
     experiment = getattr(sys.modules[__name__], args.exp)
     log = experiment(env, agent, config)
     log['params'] = config
-    filename = "{}_{}".format(config['exp_name'], 15 + i)
+    filename = "{}_{}".format(config['exp_name'], i)
     # TODO make this NOT pytorch specific
     if config['exp_parameters']['save_model_params']:
         torch.save(log['model_params'], f'{output_folder}{filename}_model_params.pt')
         del log['model_params']
-    print(f'Saving results in: {filename}s\n**********\n')
+    print(f'Saving results in: {filename}\n**********\n')
     np.save(f'{output_folder}{filename}', log)
     print("Time elapsed: {:.2} minutes\n\n".format((time.time() - start_time) / 60))
     os.system('sleep 0.5')

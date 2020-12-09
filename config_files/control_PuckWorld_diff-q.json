@@ -5,7 +5,7 @@
     "exp_parameters":
     {
         "num_runs": 1,
-        "num_max_steps": 100000,
+        "num_max_steps": 1000000,
         "save_model_params": true
     },
     "env_parameters":
@@ -18,19 +18,19 @@
         {
             "policy_type": "egreedy",
             "epsilon_start": 1.0,
-            "epsilon_end": 0.1,
+            "epsilon_end": 0.05,
             "warmup_steps": 1000,
-            "decay_period": 5000,
+            "decay_period": 10000,
 
             "layer_sizes": [8, 10, 10, 4],
-            "er_buffer_capacity": 20000,
+            "er_buffer_capacity": 50000,
             "batch_size": 32,
-            "steps_per_target_network_update": 10
+            "steps_per_target_network_update": 1000
         },
         "sweep_parameters":
         {
             "alpha": [0.0025],
-            "eta": [0.5]
+            "eta": [0.0025]
         }
     }
 }

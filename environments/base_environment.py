@@ -24,7 +24,7 @@ class BaseEnvironment:
         self.state_space = None
 
     @abstractmethod
-    def env_init(self, env_info={}):
+    def env_init(self, env_info):
         """Setup for the environment called when the experiment first starts.
 
         Note:

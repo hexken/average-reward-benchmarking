@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod
 from math import inf
 
 import gym
+import gym_pygame
 
 from environments.base_environment import BaseEnvironment
 

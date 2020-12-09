@@ -45,7 +45,7 @@ def run_exp_learning_control_no_eval(env, agent, config):
             reward, obs, action, _ = rl_glue.rl_step()
             rewards_all[run][time_step] = reward
 
-    tqdm.write('AvgReward_total\t= %f' % (np.mean(rewards_all)))
+    tqdm.write('AvgReward_total\t\t= %f' % (np.mean(rewards_all)))
     tqdm.write('AvgReward_lasthalf\t= %f\n' % np.mean(rewards_all[:, rewards_all.shape[1] // 2:]))
     tqdm.write('nStepAvgReward_total\t= %f' % np.mean(avg_rewards_all))
     tqdm.write('nStepAvgReward_lasthalf\t= %f\n' % np.mean(avg_rewards_all[:, avg_rewards_all.shape[1] // 2:]))

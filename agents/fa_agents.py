@@ -208,7 +208,7 @@ class MLPControlAgent(FAControlAgent):
                                                   clipnorm=1.0) # could change clipnorm?
         self.loss_function = tf.keras.losses.Huber()
         self.update_after_actions = 1 # 8
-        self.update_target_network = 10000 # 1600
+        self.update_target_network = 5000 #10000 # 1600
         self.update_avg_reward = 10
         
         # frame counts
@@ -254,9 +254,9 @@ class MLPControlAgent(FAControlAgent):
         self.update_rho_history = []
         
         # random action frames
-        self.epsilon_random_frames = 20000 # 4000
+        self.epsilon_random_frames = 5000 # 4000
         # greedy action frames (for epsilon decay)
-        self.epsilon_greedy_frames = 100000 # 40000
+        self.epsilon_greedy_frames = 25000 # 40000
         # maximum replay length
         self.max_memory_length = 100000 # 80000
     

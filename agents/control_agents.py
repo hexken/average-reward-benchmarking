@@ -129,7 +129,7 @@ class RlearningAgent(MLPControlAgent):
         self.state_history.append(self.past_state)
         self.state_next_history.append(observation)
         self.rewards_history.append(reward)
-        self.update_rho_history.append(self.past_action in self.past_max_actions)
+        self.update_rho_history.append(True)
         
         action = self.choose_action(observation)
         self.past_max_actions = self.get_max_actions(observation)

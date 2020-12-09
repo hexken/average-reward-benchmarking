@@ -1,7 +1,7 @@
 {
-    "exp_name": "PuckWorld_DiffQ_eps_1-0.1",
+    "exp_name": "PuckWorld_RLearn_eps_1-0.1",
     "env": "PuckWorld",
-    "agent": "DifferentialQlearningAgent",
+    "agent": "RLearningAgent",
     "exp_parameters":
     {
         "num_runs": 1,

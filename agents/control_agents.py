@@ -39,10 +39,9 @@ class DifferentialQlearningAgent(MLPBaseAgent):
         # for now we'll keep ERbuffer and model both on device
         observation = torch.tensor(observation, device=self.device, dtype=torch.float32)
         reward = torch.tensor(reward, device=self.device, dtype=torch.float32)
-        last_action = torch.tensor(self.last_action, device=self.device, dtype=torch.int64)
-        last_state = torch.tensor(self.last_state, device=self.device, dtype=torch.float32)
 
-        self.er_buffer.add(last_state, last_action, reward, observation)
+        #last_state and last_action already on self.device?
+        self.er_buffer.add(self.last_state, self.last_action, reward, observation)
 
         if len(self.er_buffer) >= self.batch_size:
             # The Diff Q-Learning updates, adapted to work with an ER buffer and target network
@@ -114,9 +113,8 @@ class RLearningAgent(MLPBaseAgent):
         # for now we'll keep ERbuffer and model both on device
         observation = torch.tensor(observation, device=self.device, dtype=torch.float32)
         reward = torch.tensor(reward, device=self.device, dtype=torch.float32)
-        last_action = torch.tensor(self.last_action, device=self.device, dtype=torch.int64)
 
-        self.er_buffer.add(self.last_state, last_action, reward, observation)
+        self.er_buffer.add(self.last_state, self.last_action, reward, observation)
 
         if len(self.er_buffer) >= self.batch_size:
             # The Diff Q-Learning updates, adapted to work with an ER buffer and target network
@@ -143,6 +141,11 @@ class RLearningAgent(MLPBaseAgent):
                 param.grad.data.clamp_(-1, 1)
 
             with torch.no_grad():
+                g_action_indices = state_action_values == torch.max(state_action_values)
+                g_rewards = rewards[g_action_indices]
+                g_max_next_state_action_values = max_next_state_action_values[g_action_indices]
+                g_state_action_values = state_action_values[g_action_indices]
+                y = g_rewards - self.avg_reward_estimate + g_max_next_state_action_values - g_state_action_values
                 self.avg_reward_estimate += torch.mean(self.eta * self.alpha * y)
 
         if self.time_step % self.steps_per_target_network_update == 0:

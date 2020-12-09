@@ -173,6 +173,7 @@ class RVIQLearningAgent(MLPBaseAgent):
         self.avg_reward_estimate = 0.0
         self.eta = agent_info['eta']
 
+
     def agent_step(self, reward, observation):
         """A step taken by the agent.
         Performs the Direct RL step, chooses the next action.

@@ -4,8 +4,8 @@
     "agent": "DifferentialQlearningAgent",
     "exp_parameters":
     {
-        "num_runs": 10,
-        "num_max_steps": 1000000,
+        "num_runs": 30,
+        "num_max_steps": 80000,
         "save_model_params": true
     },
     "env_parameters":
@@ -20,17 +20,17 @@
             "epsilon_start": 1.0,
             "epsilon_end": 0.1,
             "warmup_steps": 1000,
-            "decay_period": 10000,
+            "decay_period": 4000,
 
             "layer_sizes": [4, 5, 5, 2],
-            "er_buffer_capacity": 50000,
+            "er_buffer_capacity": 80000,
             "batch_size": 32,
             "steps_per_target_network_update": 1000
         },
         "sweep_parameters":
         {
-            "alpha": [0.000005, 0.00005, 0.00125, 0.005, 0.2],
-            "eta": [0.000005, 0.00005, 0.00125, 0.005, 0.5]
+            "alpha": [1e-5, 1e-4, 1e-3, 1e-3],
+            "eta": [1e1, 1, 1e-1, 1e-2]
         }
     }
 }

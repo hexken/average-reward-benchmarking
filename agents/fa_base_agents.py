@@ -171,7 +171,7 @@ class MLPBaseAgent(FABaseAgent, ABC):
         self.er_buffer = ERBuffer(agent_info['er_buffer_capacity'])
         self.batch_size = agent_info['batch_size']
 
-        self.optimizer = torch.optim.RMSprop(self.Q_network.parameters(), lr=self.alpha)
+        self.optimizer = torch.optim.Adam(self.Q_network.parameters(),eps=1.5e-4, lr=self.alpha)
         # TODO might have to tune beta (SmoothL1Loss param), maybe add learning rate scheduler
         self.loss_fn = torch.nn.SmoothL1Loss()
 

@@ -5,7 +5,7 @@
     "exp_parameters":
     {
         "num_runs": 1,
-        "num_max_steps": 1000000,
+        "num_max_steps": 100000,
         "save_model_params": true
     },
     "env_parameters":
@@ -23,14 +23,14 @@
             "decay_period": 10000,
 
             "layer_sizes": [4, 5, 5, 2],
-            "er_buffer_capacity": 10000,
+            "er_buffer_capacity": 50000,
             "batch_size": 32,
             "steps_per_target_network_update": 1000
         },
         "sweep_parameters":
         {
-            "alpha": [0.00125],
-            "eta": [0.00125]
+            "alpha": [0.000005, 0.00005, 0.00125, 0.005, 0.2],
+            "eta": [0.000005, 0.00005, 0.00125, 0.005, 0.5]
         }
     }
 }

@@ -12,7 +12,7 @@ from utils.rl_glue import RLGlue
 def run_exp_learning_control_no_eval(env, agent, config):
     num_runs = config['exp_parameters']['num_runs']
     max_steps = config['exp_parameters']['num_max_steps']
-    avg_every_n_steps = config['exp_parameters']['eval_every_n_steps']
+    avg_every_n_steps = config['exp_parameters']['avg_every_n_steps']
     save_model_params = config['exp_parameters'].get('save_model_params', True)
 
     env_info = config['env_parameters']

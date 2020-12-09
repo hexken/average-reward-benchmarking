@@ -7,6 +7,9 @@ from environments import *
 from experiments import *
 from utils.helpers import validate_output_folder
 
+# disable video for PLE
+os.environ["SDL_VIDEODRIVER"] = "dummy"
+
 parser = argparse.ArgumentParser(description="Run an experiment based on parameters specified in a configuration file")
 parser.add_argument('--config-file', required=True,
                     help='location of the config file for the experiment')

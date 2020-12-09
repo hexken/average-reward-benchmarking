@@ -1,6 +1,6 @@
 {
     "exp_name": "puckworld_50k",
-    "env": "PuckWorldEnv",
+    "env": "PuckWorld",
     "agent": "RlearningAgent",
     "exp_parameters":
     {

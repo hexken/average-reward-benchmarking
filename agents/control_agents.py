@@ -46,7 +46,7 @@ class DifferentialQlearningAgent(MLPControlAgent):
         self.state_history.append(self.past_state)
         self.state_next_history.append(observation)
         self.rewards_history.append(reward)
-        self.update_rho_history.append(self.past_action in self.past_max_actions)
+        self.update_rho_history.append(True)
         
         action = self.choose_action(observation)
         self.past_state = observation
@@ -161,6 +161,7 @@ class RlearningAgent(MLPControlAgent):
             (integer) The action the agent takes given this observation.
         """
         self.frame_count += 1
+        print(self.frame_count)
         
         # reward clipping?
         #reward = np.sign(reward)
@@ -298,7 +299,6 @@ class RVIQlearningAgent(MLPControlAgent):
         if reward != 0:
             print(reward)
         '''
-        
         
         self.action_history.append(self.past_action)
         self.state_history.append(self.past_state)

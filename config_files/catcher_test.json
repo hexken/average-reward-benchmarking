@@ -1,6 +1,6 @@
 {
     "exp_name": "catcher_50k_RL",
-    "env": "CatcherEnv",
+    "env": "Catcher",
     "agent": "RlearningAgent",
     "exp_parameters":
     {

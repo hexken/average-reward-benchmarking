@@ -4,7 +4,7 @@ from tensorflow.keras import layers
 
 from agents.fa_agents import MLPControlAgent
 
-class DifferentialQlearningAgent(MLPControlAgent):
+class OLD(MLPControlAgent):
     """
     Implements the version of newly-proposed Differential Q-learning algorithm
     in which centering does not affect the learning process.
@@ -81,7 +81,7 @@ class DifferentialQlearningAgent(MLPControlAgent):
 
 
 
-class RlearningAgent(MLPControlAgent):
+class DifferentialQlearningAgent(MLPControlAgent):
     """
     Implements the R-learning algorithm by Schwartz (1993).
     """

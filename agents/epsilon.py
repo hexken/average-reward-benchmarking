@@ -1,7 +1,7 @@
 from numpy import clip
 
 
-class Epsilon(object):
+class Epsilon:
 
     def __init__(self, epsilon_start=1.0, epsilon_end=0.1, warmup_steps=0, decay_period=1000):
         self.epsilon_end = epsilon_end

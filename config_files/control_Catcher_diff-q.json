@@ -5,7 +5,7 @@
     "exp_parameters":
     {
         "num_runs": 1,
-        "num_max_steps": 100000,
+        "num_max_steps": 1000,
         "avg_every_n_steps": 1000,
         "save_model_params": true
     },
@@ -20,8 +20,8 @@
             "policy_type": "egreedy",
             "epsilon_start": 1.0,
             "epsilon_end": 0.1,
-            "warmup_steps": 1000,
-            "decay_period": 5000,
+            "warmup_steps": 100,
+            "decay_period": 500,
 
             "layer_sizes": [4, 5, 5, 2],
             "er_buffer_capacity": 10000,

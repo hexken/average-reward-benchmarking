@@ -73,10 +73,9 @@ class DifferentialQlearningAgent(MLPBaseAgent):
         if self.time_step % self.steps_per_target_network_update == 0:
             self.target_network.load_state_dict(self.Q_network.state_dict())
 
-        self.finalize_step(observation=observation)
+        self.finalize_step(observation)
+        print(self.time_step)
 
-        if self.time_step % 1000 == 0:
-            print(self.epsilon(self.time_step))
         return self.last_action
 
 

@@ -32,17 +32,13 @@ class FABaseAgent(BaseAgent):
         self.last_action = None
         self.last_state = None
 
-    # TODO make policies into a class?
-
     def egreedy_policy(self, observation, time_step):
         """returns an action using an epsilon-greedy policy w.r.t. the current action-value function.
         Returns:
             (Integer) The action taken w.r.t. the aforementioned epsilon-greedy policy
         """
 
-        if self.rand_generator.rand() < 0.1:
-            if time_step % 1000:
-                print(self.epsilon(time_step))
+        if self.rand_generator.rand() < self.epsilon(time_step):
             action = self.rand_generator.randint(self.action_space)
         else:
             action = argmax(self.rand_generator, self.get_action_values(observation))
@@ -90,9 +86,19 @@ class FABaseAgent(BaseAgent):
     def finalize_step(self, observation):
         """ Finalizes a control agents step. Call after parameter updates."""
 
+        print(self.time_step)
         self.last_action = self.choose_action(observation, self.time_step)
         self.last_state = observation
         self.time_step += 1
+
+    def agent_end(self, reward):
+        """Run when the agent terminates.
+        A direct-RL update with the final transition. Not applicable for continuing tasks
+        Args:
+            reward (float): the reward the agent received for entering the
+                terminal state.
+        """
+        pass
 
     @abstractmethod
     def agent_step(self, reward, observation):
@@ -107,15 +113,6 @@ class FABaseAgent(BaseAgent):
         Returns:
             (integer) The action the agent takes given this observation.
         """
-
-    def agent_end(self, reward):
-        """Run when the agent terminates.
-        A direct-RL update with the final transition. Not applicable for continuing tasks
-        Args:
-            reward (float): the reward the agent received for entering the
-                terminal state.
-        """
-        pass
 
     @abstractmethod
     def get_action_values(self, observation):

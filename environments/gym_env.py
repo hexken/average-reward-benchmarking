@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
+from math import inf
 
 import gym
-import gym_pygame
 
 from environments.base_environment import BaseEnvironment
 
@@ -14,7 +14,7 @@ class GymEnvBase(BaseEnvironment):
 
     def env_init(self, game, env_info):
         super().env_init()  # does nothing atm, but perhaps in the future..
-        self.env = gym.make(game)
+        self.env = gym.make(game, init_lives=inf)
         self.env.seed(env_info['seed'])
 
     def env_start(self):

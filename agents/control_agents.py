@@ -74,7 +74,6 @@ class DifferentialQlearningAgent(MLPBaseAgent):
             self.target_network.load_state_dict(self.Q_network.state_dict())
 
         self.finalize_step(observation)
-        print(self.time_step)
 
         return self.last_action
 

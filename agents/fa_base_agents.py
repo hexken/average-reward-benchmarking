@@ -86,7 +86,6 @@ class FABaseAgent(BaseAgent):
     def finalize_step(self, observation):
         """ Finalizes a control agents step. Call after parameter updates."""
 
-        print(self.time_step)
         self.last_action = self.choose_action(observation, self.time_step)
         self.last_state = observation
         self.time_step += 1

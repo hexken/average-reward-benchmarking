@@ -26,16 +26,6 @@ cfg_end_idx = int(args.cfg_end) if args.cfg_end != -1 else sweeper.total_combina
 print(output_folder)
 print('\n\nRunning configurations %d to %d...\n\n' % (cfg_start_idx, cfg_end_idx))
 
-
-# TODO this is hacky, integrate it into the config file? Another seed is set in each agents random object
-# def set_seeds(seed):
-#     random.seed(seed)
-#     np.random.seed(seed + 1)
-#     torch.manual_seed(seed + 2)
-#     torch.cuda.manual_seed_all(seed + 3)
-# set_seeds(47)
-
-
 start_time = time.time()
 
 for i in range(cfg_start_idx, cfg_end_idx):
@@ -47,8 +37,11 @@ for i in range(cfg_start_idx, cfg_end_idx):
     log = experiment(env, agent, config)
     log['params'] = config
     filename = "{}_{}".format(config['exp_name'], 15 + i)
-    print('Saving results in: %s\n**********\n' % (filename))
-    np.save("{}{}".format(output_folder, filename), log)
+    # TODO make this NOT pytorch specific
+    if config['exp_parameters']['save_model_params']:
+        torch.save(log['model_params'], f'{output_folder}{filename}_model_params.pt')
+    print(f'Saving results in: {filename}s\n**********\n')
+    np.save(f'{output_folder}{filename}', log)
     print("Time elapsed: {:.2} minutes\n\n".format((time.time() - start_time) / 60))
     os.system('sleep 0.5')
 

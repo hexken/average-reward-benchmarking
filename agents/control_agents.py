@@ -30,7 +30,7 @@ class DifferentialQlearningAgent(MLPBaseAgent):
                 the state observation from the environment's step based on where
                 the agent ended up after the last step
         Returns:
-            (integer) The action the agent takes given this observation.
+            (torch.Tensor) The action the agent takes given this observation.
 
         Note: the step size parameters are separate for the value function and the reward rate in the code,
                 but will be assigned the same value in the agent parameters agent_info
@@ -38,14 +38,15 @@ class DifferentialQlearningAgent(MLPBaseAgent):
 
         # for now we'll keep ERbuffer and model both on device
         observation = torch.tensor(observation, device=self.device, dtype=torch.float32)
-        last_state = torch.tensor(self.last_state, device=self.device, dtype=torch.float32)
+        # TODO only the initial state isn't  tensor at this point?
+        if not type(self.last_state) is torch.Tensor:
+            self.last_state = torch.tensor(self.last_state, device=self.device, dtype=torch.float32)
         reward = torch.tensor(reward, device=self.device, dtype=torch.float32)
         last_action = torch.tensor(self.last_action, device=self.device, dtype=torch.int64)
 
-        self.er_buffer.add(last_state, last_action, reward, observation)
+        self.er_buffer.add(self.last_state, last_action, reward, observation)
 
         if len(self.er_buffer) >= self.batch_size:
-            # optimize
             # The Diff Q-Learning updates, adapted to work with an ER buffer and target network
 
             # [(exp1),...,(expn)]
@@ -53,17 +54,12 @@ class DifferentialQlearningAgent(MLPBaseAgent):
 
             # Experience(s=(exp1.s,...expn.s), a=(exp1.a,...,expn.a),...)
             experience_batch = Experience(*zip(*experience_list))
-
             state_batch = torch.stack(experience_batch.state)
             next_state_batch = torch.stack(experience_batch.next_state)
 
-            # gather using action_batch to index into state value vector batch
             action_batch = torch.tensor(experience_batch.action).view(-1, 1)
-            # all_state_action_values = self.Q_network(state_batch)
-            state_action_values = torch.gather(self.Q_network(state_batch), 1, action_batch)
-            # get the max_a Q_target(s',a) values
-            # next_state_action_values =  self.target_network(next_state_batch)
-            max_next_state_action_values = self.target_network(next_state_batch).max(1)[0].detach()
+            state_action_values = torch.gather(self.Q_network(state_batch), 1, action_batch).view(-1)
+            max_next_state_action_values = self.target_network(next_state_batch).max(dim=1)[0].detach()
             rewards = torch.tensor(experience_batch.reward)
 
             y = rewards - self.avg_reward_estimate + max_next_state_action_values - state_action_values
@@ -75,7 +71,7 @@ class DifferentialQlearningAgent(MLPBaseAgent):
                 param.grad.data.clamp_(-1, 1)
 
             with torch.no_grad():
-                self.avg_reward_estimate += self.avg_reward_estimate * self.eta * self.alpha * y
+                self.avg_reward_estimate += torch.mean(self.avg_reward_estimate * self.eta * self.alpha * y)
 
         if self.time_step % self.steps_per_target_network_update == 0:
             self.target_network.load_state_dict(self.Q_network.state_dict())

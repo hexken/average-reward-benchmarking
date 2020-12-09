@@ -1,6 +1,6 @@
 {
-    "exp_name": "Catcher_DiffQ_eps_1-0.1",
-    "env": "Catcher",
+    "exp_name": "PuckWorld_DiffQ_eps_1-0.1",
+    "env": "PuckWorld",
     "agent": "DifferentialQlearningAgent",
     "exp_parameters":
     {

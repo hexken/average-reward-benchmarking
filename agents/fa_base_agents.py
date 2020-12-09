@@ -76,7 +76,6 @@ class FABaseAgent(BaseAgent):
             self.policy_type = policy_type
             return self.greedy_policy
         elif policy_type == 'egreedy':
-
             self.policy_type = policy_type
             epsilon_start = agent_info.get('epsilon_start')
             epsilon_end = agent_info.get('epsilon_end')
@@ -142,6 +141,10 @@ class FABaseAgent(BaseAgent):
         """
         pass
 
+    @abstractmethod
+    def get_model_params(self):
+        pass
+
 
 class MLPBaseAgent(FABaseAgent, ABC):
     """
@@ -193,3 +196,6 @@ class MLPBaseAgent(FABaseAgent, ABC):
         self.optimizer = torch.optim.RMSprop(self.Q_network.parameters(), lr=self.alpha)
         # TODO might have to tune beta (SmoothL1Loss param), maybe add learning rate scheduler
         self.loss_fn = torch.nn.SmoothL1Loss()
+
+    def get_model_params(self):
+        return self.Q_network.state_dict()

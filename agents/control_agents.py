@@ -40,7 +40,7 @@ class DifferentialQlearningAgent(MLPBaseAgent):
         observation = torch.tensor(observation, device=self.device, dtype=torch.float32)
         reward = torch.tensor(reward, device=self.device, dtype=torch.float32)
 
-        #last_state and last_action already on self.device?
+        # last_state and last_action already on self.device?
         self.er_buffer.add(self.last_state, self.last_action, reward, observation)
 
         if len(self.er_buffer) >= self.batch_size:
@@ -53,7 +53,7 @@ class DifferentialQlearningAgent(MLPBaseAgent):
             experience_batch = Experience(*zip(*experience_list))
             state_batch = torch.stack(experience_batch.state)
             next_state_batch = torch.stack(experience_batch.next_state)
-            action_batch = torch.tensor(experience_batch.action).view(-1, 1)
+            action_batch = torch.tensor(experience_batch.action, device=self.device, dtype=torch.int64).view(-1, 1)
 
             state_action_values = torch.gather(self.Q_network(state_batch), 1, action_batch).view(-1)
             max_next_state_action_values = self.target_network(next_state_batch).max(dim=1)[0].detach()
@@ -126,7 +126,7 @@ class RLearningAgent(MLPBaseAgent):
             experience_batch = Experience(*zip(*experience_list))
             state_batch = torch.stack(experience_batch.state)
             next_state_batch = torch.stack(experience_batch.next_state)
-            action_batch = torch.tensor(experience_batch.action).view(-1, 1)
+            action_batch = torch.tensor(experience_batch.action, device=self.device, dtype=torch.int64).view(-1, 1)
 
             state_action_values = torch.gather(self.Q_network(state_batch), 1, action_batch).view(-1)
             max_next_state_action_values = self.target_network(next_state_batch).max(dim=1)[0].detach()
@@ -166,13 +166,15 @@ class RVIQLearningAgent(MLPBaseAgent):
     def __init__(self, num_actions):
         super(RVIQLearningAgent, self).__init__(num_actions)
         self.avg_reward_estimate = None
-        self.eta = None
+        self.reference_size = None
+        self.reference_states = None
+        self.reference_actions = None
 
     def agent_init(self, agent_info):
         super().agent_init(agent_info)
+        # TODO not used for RVIQLearning
         self.avg_reward_estimate = 0.0
-        self.eta = agent_info['eta']
-
+        self.reference_size = agent_info['reference_size']
 
     def agent_step(self, reward, observation):
         """A step taken by the agent.
@@ -192,11 +194,19 @@ class RVIQLearningAgent(MLPBaseAgent):
         # for now we'll keep ERbuffer and model both on device
         observation = torch.tensor(observation, device=self.device, dtype=torch.float32)
         reward = torch.tensor(reward, device=self.device, dtype=torch.float32)
-        last_action = torch.tensor(self.last_action, device=self.device, dtype=torch.int64)
 
-        self.er_buffer.add(self.last_state, last_action, reward, observation)
+        self.er_buffer.add(self.last_state, self.last_action, reward, observation)
 
-        if len(self.er_buffer) >= self.batch_size:
+        # TODO do this in a better way
+        # populate reference state action pairs
+        if self.time_step > self.reference_size and self.reference_states is None:
+            reference_experiences = Experience(*zip(*self.er_buffer.buffer[:self.reference_size]))
+            self.reference_states = torch.stack(reference_experiences.state)
+            self.reference_actions = torch.tensor(reference_experiences.action, device=self.device,
+                                                  dtype=torch.int64).view(
+                -1, 1)
+
+        if len(self.er_buffer) >= self.batch_size and self.time_step > self.reference_size:
             # The Diff Q-Learning updates, adapted to work with an ER buffer and target network
 
             # [(exp1),...,(expn)]
@@ -212,16 +222,17 @@ class RVIQLearningAgent(MLPBaseAgent):
             max_next_state_action_values = self.target_network(next_state_batch).max(dim=1)[0].detach()
             rewards = torch.tensor(experience_batch.reward)
 
-            y = rewards - self.avg_reward_estimate + max_next_state_action_values - state_action_values
+            with torch.no_grad():
+                reference_function = torch.mean(
+                    torch.gather(self.Q_network(self.reference_states), 1, self.reference_actions).view(-1))
+
+            y = rewards - reference_function + max_next_state_action_values - state_action_values
             loss = self.loss_fn(y, state_action_values)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
             for param in self.Q_network.parameters():
                 param.grad.data.clamp_(-1, 1)
-
-            with torch.no_grad():
-                self.avg_reward_estimate += torch.mean(self.eta * self.alpha * y)
 
         if self.time_step % self.steps_per_target_network_update == 0:
             self.target_network.load_state_dict(self.Q_network.state_dict())

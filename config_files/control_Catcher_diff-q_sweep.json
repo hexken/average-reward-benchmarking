@@ -1,5 +1,5 @@
 {
-    "exp_name": "Catcher_DiffQ_eps_1-0.1",
+    "exp_name": "Catcher_DiffQ_eps_1-0.1_sweep",
     "env": "Catcher",
     "agent": "DifferentialQlearningAgent",
     "exp_parameters":

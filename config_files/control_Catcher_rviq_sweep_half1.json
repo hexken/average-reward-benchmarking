@@ -1,5 +1,5 @@
 {
-    "exp_name": "Catcher_RVIQ_sweep",
+    "exp_name": "Catcher_RVIQ_sweep_ref16",
     "env": "Catcher",
     "agent": "RVIQLearningAgent",
     "exp_parameters":
@@ -30,7 +30,7 @@
         "sweep_parameters":
         {
           "alpha": [1e-4, 1e-3, 1e-2, 1e-1],
-          "reference_size": [32]
+          "reference_size": [16]
         }
     }
 }

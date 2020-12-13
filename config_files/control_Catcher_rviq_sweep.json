@@ -1,7 +1,7 @@
 {
-    "exp_name": "Catcher_RVIQ_sweep",
+    "exp_name": "Catcher_RLEARN_sweep_half1",
     "env": "Catcher",
-    "agent": "RVIQLearningAgent",
+    "agent": "RLearningAgent",
     "exp_parameters":
     {
         "num_runs": 30,

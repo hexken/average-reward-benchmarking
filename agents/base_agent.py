@@ -4,7 +4,6 @@
 """
 
 from abc import ABCMeta, abstractmethod
-import numpy as np
 
 
 class BaseAgent:
@@ -16,9 +15,8 @@ class BaseAgent:
 
     __metaclass__ = ABCMeta
 
-    def __init__(self):
-        self.num_actions = None
-        self.num_states = None
+    def __init__(self, num_actions):
+        self.action_space = num_actions
 
     @abstractmethod
     def agent_init(self, agent_info):
@@ -66,9 +64,10 @@ class BaseAgent:
             rep : ndarray
                 the representation vector
         """
-        if action == -1:
-            return observation
-        else:
-            rep = np.zeros(self.num_states * self.num_actions)
-            rep[self.num_states * action: self.num_states * (action + 1)] = observation
-            return rep
+        # if action == -1:
+        #     return observation
+        # else:
+        #     rep = np.zeros(self.num_states * self.num_actions)
+        #     rep[self.num_states * action: self.num_states * (action + 1)] = observation
+        #     return rep
+        return observation

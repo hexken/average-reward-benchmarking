@@ -41,7 +41,7 @@ class Sweeper:
 
 
 if __name__ == '__main__':
-    sweeper = Sweeper("../config_files/diff-q.json")
+    sweeper = Sweeper("../config_files/control_Catcher_diff-q.json")
     print(sweeper.total_combinations)
     for i in range(sweeper.total_combinations):
         print(sweeper.get_one_config(i))

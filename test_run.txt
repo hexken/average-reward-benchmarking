@@ -1,0 +1,1 @@
+python run_exp.py --exp run_exp_learning_control_no_eval --config-file config_files/test.json --output-folder results/control/test

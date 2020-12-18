@@ -7,7 +7,7 @@ def _import_all_modules():
     globals_, locals_ = globals(), locals()
 
     # Dynamically import all the package modules in this file's directory.
-    for filename in os.listdir(__name__):
+    for filename in os.listdir(os.path.dirname(os.path.realpath(__file__))):
         # Process all python files in directory that don't start
         # with underscore (which also prevents this module from
         # importing itself).
